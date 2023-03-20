@@ -13,7 +13,7 @@ class CivilEngUnits:
     -the decimal places that you want to show in the string representation of the object
     """
    
-    def __init__(self, value=float, unit="m", decimal=3):
+    def __init__(self, value:float, unit="m", decimal=3):
         self.__parent = "CivilEngUnits" #Name of the parent class 
         self.name = "Unit" #Name of the physical quantity
         self.value = value
