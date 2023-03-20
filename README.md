@@ -1,7 +1,7 @@
 # BasicCivilEng.py
 ## Content
--[Introduction](##Introductio) /n
--[Installation](##Installation) \n
+-[Introduction](##Introductio)
+-[Installation](##Installation)
 -[Documentation](##Documentation)
     -[CivilEngUnits](###CivilEngUnits)
 
