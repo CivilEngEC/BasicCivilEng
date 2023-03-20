@@ -1,11 +1,37 @@
 # BasicCivilEng.py
+## Content
+-[Introduction](##Introductio)
+-[Installation](##Installation)
+-[Documentation](##Documentation)
+    -[CivilEngUnits](###CivilEngUnits)
+
+## Introduction
 Module that will contain basic Civil Engineering Classes and Functions for developing free open source Software in python
+## Documentation
+### Installation and usage
+```
+pip install beamframe
+```
 
-## Class CivilEngUnits (Implemented)
-This class will constitude a blueprint and parent class for Units in Civil Engineering you can specify the units and name of the physical quantity that you want to support in the class by passing a dictionary with the units in the .name attribute and a string with the name of the physical quantity in the .name attribute.
-Also, when crete a new instance you can specify:
-    -the value of the object
-    -the unit of the object
-    -the decimal places that you want to show in the string representation of the object
+**Requirements**
 
+```
+"numpy",
+"pandas",
+"matplotlib"
+```
+> **Note** All requirements will be installed automatically while installing this module.
+### List of all Classes and argument
+| class | required arguments | optional arguments |
+| -- | -- | -- |
+| `CivilEngUnits` | `value: float, unit: str`  | `decimal: int` |
+
+### Class CivilEngUnits
+This class will constitude a blueprint and parent class for Units in Civil Engineering
+
+#### Arguments
+-value(float): the magnitude of the physical quantity
+-unit(str): the unit of messurement of the physical quantity
+
+#### Methods
    
