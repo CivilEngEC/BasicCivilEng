@@ -1,5 +1,5 @@
 # BasicCivilEng.py
-Module that will contain basic Civil Enginnering Classes and Functions for developing free open source Software in python
+Module that will contain basic Civil Engineering Classes and Functions for developing free open source Software in python
 
 ## Class CivilEngUnits (Implemented)
 This class will constitude a blueprint and parent class for Units in Civil Engineering you can specify the units and name of the physical quantity that you want to support in the class by passing a dictionary with the units in the .name attribute and a string with the name of the physical quantity in the .name attribute.
