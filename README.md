@@ -35,7 +35,7 @@ This class will constitude a blueprint and parent class for Units in Civil Engin
 -decimal(int): the number of significance decimal that will be use to represent as string  <br />
 
 #### Methods
--It allow all the basic arithmetic `+,-,*,/` while operation checking the unit consitency. It can only add or substract similar units. It can multiply and divide by any given unit.<br />
+-It allow all the basic arithmetic `+,-,*,/` while operation checking the unit consitency. It can only add or substract similar units. It can multiply and divide by any given unit or numerical value.<br />
 -It can compare similar messurement unit with the operators `==,>=,<=,>,>,<,!=`. <br />
 -simplify_un(): Performs an algebraic simplification the unit of the object.<br />
 -get_units: returns the dictionary used for the conversition of the similar messurement units.<br />
