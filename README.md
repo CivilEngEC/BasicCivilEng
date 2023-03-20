@@ -45,8 +45,7 @@ This class will constitude a blueprint and parent class for Units in Civil Engin
 -`check_relationship()`: check if the object is a `CivilEngUnits` object or a child.<br /> 
 -`from_string(string=str)`: Creates a new object from a string with the value and the unit separated by a space <br />
 -`check_unit(unit=str)`: Checks if the `unit` is supported by the object. <br />
--`convert(unit:str, conversion:float)`: Converts the value of the object to the unit specified in the unit argument, conversion is an optional argument needed if
-the unit enter isn´t in the dictionary `units`.
+-`convert(unit:str, conversion:float)`: Converts the value of the object to the unit specified in the unit argument, conversion is an optional argument, it is the conversion factor used only if the unit enter isn´t in the dictionary `units`.
 
 
 
