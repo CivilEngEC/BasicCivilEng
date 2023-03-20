@@ -1,9 +1,9 @@
 # BasicCivilEng.py
 ## Content
--[Introduction](##Introductio)
--[Installation](##Installation)
--[Documentation](##Documentation)
-    -[CivilEngUnits](###CivilEngUnits)
+-[Introduction](##Introductio)  <br />
+-[Installation](##Installation)  <br />
+-[Documentation](##Documentation)  <br />
+    -[CivilEngUnits](###CivilEngUnits) <br />
 
 ## Introduction
 Module that will contain basic Civil Engineering Classes and Functions for developing free open source Software in python
@@ -30,8 +30,9 @@ pip install beamframe
 This class will constitude a blueprint and parent class for Units in Civil Engineering
 
 #### Arguments
--value(float): the magnitude of the physical quantity
--unit(str): the unit of messurement of the physical quantity
+-value(float): the magnitude of the physical quantity  <br />
+-unit(str): the unit of messurement of the physical quantity  <br />
+-decimal(int): the number of significance decimal that will be use to represent as string  <br />
 
 #### Methods
    
