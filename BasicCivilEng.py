@@ -1,19 +1,11 @@
-#Module of messurement units
-"""Module of messurement units for Civil Engineerig"""
-import re
-import numpy as np
 class CivilEngUnits:
-    """This class will constitude a blueprint and parent class for Units in Civil Engineering
-    you can specify the units and name of the physical quantity that you want to support in the class by
-    passing a dictionary with the units in the .name attribute and a string with the name of the physical quantity
-    in the .name attribute.
-    Also, when crete a new instance you can specify:
-    -the value of the object
-    -the unit of the object
+    """This class will constitude a blueprint and parent class for messurement in Civil Engineering
+    -the value messure of the physical quantity
+    -the unit of the physical quantity
     -the decimal places that you want to show in the string representation of the object
     """
    
-    def __init__(self, value:float, unit="m", decimal=3):
+    def __init__(self, value:float, unit:str, decimal=3):
         self.__parent = "CivilEngUnits" #Name of the parent class 
         self.name = "Unit" #Name of the physical quantity
         self.value = value
@@ -42,21 +34,21 @@ class CivilEngUnits:
     
     #Methods
 
-    def from_string(self, string):
+    def from_string(self, string:str):
         """Creates a new object from a string with the value and the unit separated by a space"""
         string = string.split()
         self.value = float(string[0].replace(",", ""))
         self.unit = string[1]
         return self
     
-    def check_unit(self, unit):
+    def check_unit(self, unit:str):
         """Checks if the unit is supported by the object."""
         if unit in self.units:
             return True
         else:
             return False
     
-    def convert(self, unit, conversion=None):
+    def convert(self, unit:str, conversion=None):
         """Converts the value of the object to the unit specified in the unit argument."""
 
         if self.check_unit(unit):
@@ -94,8 +86,12 @@ class CivilEngUnits:
         """Returns the units dictionary."""
         return self.units
     
+    def set_units(self, units=dict):
+        """Sets the units dictionary."""
+        self.units = units
+    
     def simplify_un(self):
-        """Simplifies by algebraic simplification the unit of the object."""
+        """Performs an algebraic simplification the unit of the object."""
         #Pass the unit
         unit =  self.unit
         #Find the first unit
@@ -397,6 +393,13 @@ class CivilEngUnits:
         return self.__class__(self.value // 1, self.unit)
     
    
+
+
+
+    
+    
+    
+
 
 
 
