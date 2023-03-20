@@ -35,5 +35,5 @@ This class will constitude a blueprint and parent class for Units in Civil Engin
 -decimal(int): the number of significance decimal that will be use to represent as string  <br />
 
 #### Methods
-Sum: $ 2 m + 3 yd = 4.7432 $ 
+Sum: $2 m + 3 yd = 4.7432$ 
    
