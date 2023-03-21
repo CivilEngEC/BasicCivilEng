@@ -1,3 +1,9 @@
+#Module of messurement units
+"""Module of messurement units for Civil Engineerig"""
+import re
+import numpy as np
+import sympy as sym
+
 class CivilEngUnits:
     """This class will constitude a blueprint and parent class for messurement in Civil Engineering
     -the value messure of the physical quantity
@@ -5,7 +11,7 @@ class CivilEngUnits:
     -the decimal places that you want to show in the string representation of the object
     """
    
-    def __init__(self, value:float, unit:str, decimal=3):
+    def __init__(self, value:float, unit:str, decimal:int=3):
         self.__parent = "CivilEngUnits" #Name of the parent class 
         self.name = "Unit" #Name of the physical quantity
         self.value = value
@@ -48,16 +54,15 @@ class CivilEngUnits:
         else:
             return False
     
-    def convert(self, unit:str, conversion=None):
+    def convert(self, unit:str, conversion:float=None):
         """Converts the value of the object to the unit specified in the unit argument."""
 
-        if self.check_unit(unit):
-            self.value = self.value * self.units[self.unit] / self.units[unit]
+        if conversion:
+            self.value = self.value * conversion
             self.unit = unit
             return self
         else:
-            if conversion:
-                self.units[unit] = conversion
+            if self.check_unit(unit):
                 self.value = self.value * self.units[self.unit] / self.units[unit]
                 self.unit = unit
                 return self
@@ -74,130 +79,156 @@ class CivilEngUnits:
         except AttributeError:
             return False
     
-    def edit_units(self, unit=str, value=float):
+    def edit_units(self, unit:str, value:float):
         """Adds  a new unit or edit a Existing one in the units dictionary."""
         self.units[unit] = value
 
-    def remove_unit(self, unit=str):
+    def remove_unit(self, unit:str):
         """Removes a unit from the units dictionary."""
-        del self.units[unit]
+        if self.check_unit(unit):
+            del self.units[unit]
+        else:
+            raise ValueError("The unit is not in the units dictionary")
 
     def get_units(self):
         """Returns the units dictionary."""
         return self.units
     
-    def set_units(self, units=dict):
+    def set_units(self, units:dict):
         """Sets the units dictionary."""
         self.units = units
+    
+    def remove_parenthesis_un(self):
+        """Removes the parenthesis in the unit of the object."""
+        unit = self.unit
+        if "(" in unit and ")" in unit:
+            s = re.compile(r"""/\((.+?)\) """ , re.X)
+            aux = re.findall(s, unit)
+            unit = re.sub(s, r"", unit)
+            unit = unit.replace("(", "")
+            unit = unit.replace(")", "")    
+            for i in range(len(aux)):
+                aux[i] = aux[i].replace(".","/")
+                aux[i] = "/"+aux[i]
+                unit = unit + aux[i]
+            self.unit = unit
+        elif "(" in unit or ")" in unit: 
+            raise ValueError("The unit is not valid")  
+        return unit
     
     def simplify_un(self):
         """Performs an algebraic simplification the unit of the object."""
         #Pass the unit
         unit =  self.unit
-        #Find the first unit
-        try:
-            first_un = re.search(r"\w+", unit)[0]
-        except:
-            raise ValueError("Unit not supported")
-        #Find the units that are multiplied  
+        #Check if the unit has parenthesis
+        unit = self.remove_parenthesis_un()
+        if re.match(r"\w+", unit) == None:
+            raise ValueError("The unit is not valid")
+        if unit[0] != "1":
+            unit = "." + unit
         multiply_un = re.findall(r"\.\w+", unit)
-        #Find the units that are divided
         divide_un = re.findall(r"/\w+", unit)
-        #Find the number of time that the each unit is multiplied
-        mult_un  = {}
+        for i in range(len(multiply_un)):
+            multiply_un[i] = multiply_un[i].replace(".", "")
+        for i in range(len(divide_un)):
+            divide_un[i] = divide_un[i].replace("/", "")
+        
+        mult_un ={}
         for i in multiply_un:
-            key = re.search(r"[a-zA-Z]+", i)[0]
-            try:
-                c = re.search(r"\d+", i)[0]
-                c = int(c)
-            except:
-                c = 1
-            if key in mult_un:
-                mult_un[key] += c
+            key = re.search(r"[a-zA-Z]+", i).group()
+            c = re.search(r"\d+", i)
+            if c == None:
+                c=1
             else:
-                mult_un[key] = c
-        #Find the number of time that the each unit is divided
-        div_un = {}
+                c = c.group()
+            c = int(c)
+            if not key in mult_un:
+                mult_un[key] = sym.Symbol(key)**c
+            else:
+                mult_un[key] *= sym.Symbol(key)**c
+        div_un ={}
         for i in divide_un:
-            key = re.search(r"[a-zA-Z]+", i)[0]
-            try:
-                c = re.search(r"\d+", i)[0]
-                c = int(c)
-            except:
-                c = 1
-            if key in div_un:
-                div_un[key] += c
+            key = re.search(r"[a-zA-Z]+", i).group()
+            c = re.search(r"\d+", i)
+            if c == None:
+                c=1
             else:
-                div_un[key] = c
-        
-        keys = set(mult_un.keys()).union(set(div_un.keys()))
-        
-        if first_un != "1":
-            key = re.search(r"[a-zA-Z]+", first_un)[0]
-            try:
-                aux  = re.search(r"\d+", first_un)[0]
-                aux = int(aux)
-            except:
-                aux = 1
-            if key in div_un:
-                if aux >= div_un[key]:
-                    aux -= div_un[key]
-                    del div_un[key]
-                    if aux == 0:
-                        first_un = "1"
-                else:
-                    div_un[key] -= aux
-                    first_un = "1"
-
-            elif key in mult_un:
-                mult_un[key] += aux
+                c = c.group()
+            c = int(c)
+            if not key in div_un:
+                div_un[key] = sym.Symbol(key)**c
             else:
-                mult_un[key] = aux
-
-        for key in keys:
-            if key in mult_un and key in div_un:
-                if mult_un[key] > div_un[key]:
-                    mult_un[key] -= div_un[key]
-                    del div_un[key]
-                elif mult_un[key] < div_un[key]:
-                    div_un[key] -= mult_un[key]
-                    del mult_un[key]
-                else:
-                    del mult_un[key]
-                    del div_un[key]
-        
-        new_unit = ""
-        if first_un == "1" and len(mult_un) == 0:
-            new_unit += first_un
-        elif first_un == "1" and len(mult_un) > 0:
-            key = list(mult_un.keys())[0]
-            c = mult_un[key]
-            if c == 1:
-                new_unit += key
-            else:
-                new_unit += key + str(c)
-            del mult_un[key]
-        else:
-            
-            new_unit += first_un
-        
+                div_un[key] *= sym.Symbol(key)**c
+        new = 1
         for key in mult_un:
-            c = mult_un[key]
-            if c == 1:
-                new_unit += "." + key
-            else:
-                new_unit += "."+ key + str(c)
-        
+            new *= mult_un[key]
         for key in div_un:
-            c = div_un[key]
-            if c == 1:
-                new_unit += "/"+ key
-            else:
-                new_unit +="/"+ key + str(c)
-        self.unit = new_unit
-        return self.unit       
+            new /= div_un[key]
+        new = str(new)
+        new = new.replace("**", "")
+        new = new.replace("*", ".")
+        self.unit = new
+        return self.unit
 
-    
+    def simplify(self, unit:str, units:dict=None):
+        """Simplifies the unit of the object and converts the value to the unit specified in the unit argument."""
+        if units == None:
+            units = self.units
+        if not unit in units:
+            raise ValueError("""The unit is not in he units dictionary, 
+            please provide a unit dictonary that contain the unit""")
+        self.simplify_un()
+        self.remove_parenthesis_un()
+        old_unit = self.unit
+        old_unit = "." + old_unit
+        multiply_un = re.findall(r"\.\w+", old_unit)
+        divide_un = re.findall(r"/\w+", old_unit)
+        for i in range(len(multiply_un)):
+            aux = multiply_un[i]
+            un = re.search(r"[a-zA-Z]+", aux).group()
+            c = re.search(r"\d+", aux)
+            if c == None:
+                c=1
+            else:
+                c = c.group()
+            c  = int(c)
+            if un in units:
+                self.value *= (units[un]/units[unit])**c
+                if c == 1:
+                    multiply_un[i] = "." + unit
+                else:
+                    multiply_un[i] = "." + unit + str(c)
+            else:
+                continue
+        for i in range(len(divide_un)):
+            aux = divide_un[i]
+            un = re.search(r"[a-zA-Z]+", aux).group()
+            c = re.search(r"\d+", aux)
+            if c == None:
+                c=1
+            else:
+                c = c.group()
+            c  = int(c)
+            if un in units:
+                self.value /= (units[un]/units[unit])**c
+                if c == 1:
+                    divide_un[i] = "/" + unit
+                else:
+                    divide_un[i] = "/" + unit + str(c)
+            else:
+                continue
+        new = ""
+        for i in multiply_un:
+            new += i
+        for i in divide_un:
+            new += i
+        if new[0] == ".":
+            new = new[1:]
+        self.unit = new
+        self.simplify_un()
+        return self
+
+
     #Basic operators
 
     def __add__(self, other):
