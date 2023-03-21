@@ -10,14 +10,16 @@ Module that will contain basic Civil Engineering Classes and Functions for devel
 ## Documentation
 ### Installation and usage
 ```
-pip install beamframe
+pip install BasicCivilEng
 ```
 
 **Requirements**
 
 ```
+"re",
 "numpy",
 "pandas",
+"sympy",
 "matplotlib"
 ```
 > **Note** All requirements will be installed automatically while installing this module.
