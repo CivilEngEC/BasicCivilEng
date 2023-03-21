@@ -24,17 +24,19 @@ pip install BasicCivilEng
 ```
 > **Note** All requirements will be installed automatically while installing this module.
 ### List of all Classes and argument
-| class | required arguments | optional arguments |
+| Class | Required Arguments | Optional Arguments |
 | -- | -- | -- |
 | `CivilEngUnits` | `value: float, unit: str`  | `decimal: int` |
 
 ### Class CivilEngUnits
 This class will constitude a blueprint and parent class for Units in Civil Engineering
 
-#### Arguments
--value(float): the magnitude of the physical quantity  <br />
--unit(str): the unit of messurement of the physical quantity  <br />
--decimal(int): the number of significance decimal that will be use to represent as string  <br />
+#### Atributes
+-`value(float)`: the magnitude of the physical quantity  <br />
+-`unit(str)`: the unit of messurement of the physical quantity  <br />
+-`decimal(int)`: the number of significance decimal that will be use to represent as string  <br />
+-`name(str)`: the name of the physical quantity that is messure by this class <br />
+-`units(dict)`: the key of the dictionary are the symbols of the units that the class will support and value are the convesion factor <br />
 
 #### Methods
 -It allow all the basic arithmetic `+,-,*,/` while operation checking the unit consitency. It can only add or substract similar units. It can multiply and divide by any given unit or numerical value.<br />
