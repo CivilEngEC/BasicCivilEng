@@ -48,10 +48,10 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 | `convert()` | `unit:str`  | `factor:str=None` | It converts the object to the unit specified in the unit argument. If a `factor` is provided, it will use as the conversion factor to perform the operation. Otherwise, it will use the conversion that is located in the dictionary `units`.| `Bool` like object |
 | `check_relationship()` | `other`  |  | It verifies if the object have the same parent Object.| `Bool` like object |
 | `get_units()` |  |  | It return the `units` dictionary of the object | `units` dictionary |
-| `edit_units()` | `unit:str`, `factor:float`  |  | It add a new unit with a new factor or it update a existing unit with a given factor|  |
+| `edit_units()` | `unit:str`, `factor:float`  |  | It add a new `unit` with a new `factor` or it update a existing `unit` with a given `factor`|  |
 | `remove_unit()` | `unit:str` |  | It remove the given `unit` from the `units` dictionary |  |
 | `set_units()` | `units:dict` |  | It set the `units` dictionary of the object |  |
-| `simplify_un()` | |  | It performs an algebraic simplification of the ´unit´ of the object | `unit:str` |
+| `simplify_un()` | |  | It performs an algebraic simplification of the `unit` of the object | `unit:str` |
 | `simplify()` | `unit:str` |  `units:dict=None` |  It performs an algebraic simplification of the `unit` of the object. And convert all the units of the same physical quantity to the given `unit` string in the argument. If a `units` dictionary is provided, it uses this dictionary to operate. Otherwise, it will use the `units` dictionary the object provides. | `unit:str` |
 
 
