@@ -44,10 +44,10 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 | Method | Required Arguments | Optional Arguments | Operation | Return | 
 | -- | -- | -- | -- | -- |
 | `from_string()` | `string:str`  |  | It creates a new object from a string with the value and the unit separated by a space. | `CivilEngUnits` like object |
-| `check_unit()` | `unit:str`  |  | It checks if the unit is in the ´units´ dictionary and, thus, if it is supported | `Bool` like object |
-| `convert()` | `unit:str`  | `factor:str=None` | It converts the object to the unit specified in the unit argument. If a `factor` is provided, it will use as the conversion factor to perform the operation. Otherwise, it will use the conversion that is located in the dictionary `units`.| `Bool` like object |
-| `check_relationship()` | `other`  |  | It verifies if the object have the same parent Object.| `Bool` like object |
-| `get_units()` |  |  | It return the `units` dictionary of the object | `units` dictionary |
+| `check_unit()` | `unit:str`  |  | It checks if the unit is in the ´units´ dictionary and, thus, if it is supported | `Bool` True if the unit is in units False otherwise |
+| `convert()` | `unit:str`  | `factor:str=None` | It converts the object to the unit specified in the unit argument. If a `factor` is provided, it will use as the conversion factor to perform the operation. Otherwise, it will use the conversion that is located in the dictionary `units`.|  |
+| `check_relationship()` | `other`  |  | It verifies if the object have the same parent Object.| `Bool` True if they are related by the same parent, False otherwise |
+| `get_units()` |  |  | It return the `units` dictionary of the object | `units:dict` |
 | `edit_units()` | `unit:str`, `factor:float`  |  | It add a new `unit` with a new `factor` or it update a existing `unit` with a given `factor`|  |
 | `remove_unit()` | `unit:str` |  | It remove the given `unit` from the `units` dictionary |  |
 | `set_units()` | `units:dict` |  | It set the `units` dictionary of the object |  |
