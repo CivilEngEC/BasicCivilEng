@@ -112,7 +112,7 @@ class CivilEngUnits:
             unit = unit.replace(")", "")    
             def aux_f(aux):
                 aux = aux.replace(".", "/")
-                ux = "/"+aux
+                aux = "/"+aux
                 return aux
             vaux_f = np.vectorize(aux_f)
             aux = np.array(aux)
