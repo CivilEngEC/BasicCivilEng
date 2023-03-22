@@ -52,7 +52,7 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 | `remove_unit()` | `unit:str` |  | It remove the given `unit` from the `units` dictionary |  |
 | `set_units()` | `units:dict` |  | It set the `units` dictionary of the object |  |
 | `simplify_un()` | |  | It performs an algebraic simplification of the ´unit´ of the object | `unit:str` |
-| `simplify()` | `unit:str` |  `units:dict=None` |  It performs an algebraic simplification of the ´unit´ of the object. And convert all the units of the same physical quantity to the given ´unit´ string in the argument. If a unit dictionary is provided, it uses this dictionary to operate. Otherwise, it will use the ´units´ dictionary the object provides. | `unit:str` |
+| `simplify()` | `unit:str` |  `units:dict=None` |  It performs an algebraic simplification of the `unit` of the object. And convert all the units of the same physical quantity to the given `unit` string in the argument. If a `units` dictionary is provided, it uses this dictionary to operate. Otherwise, it will use the `units` dictionary the object provides. | `unit:str` |
 
 
 
