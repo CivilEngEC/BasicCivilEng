@@ -43,7 +43,10 @@ This class will constitude a blueprint and parent class for Units in Civil Engin
 -It can compare similar messurement unit with the operators `==,>=,<=,>,>,<,!=`. <br />
 | Method | Required Arguments | Optional Arguments | Operation | Return | 
 | -- | -- | -- | -- | -- |
-| `from_string()` | `string:str`  | `` | Creates a new object from a string with the value and the unit separated by a space | `CivilEngUnits` like object |
+| `from_string()` | `string:str`  |  | Creates a new object from a string with the value and the unit separated by a space | `CivilEngUnits` like object |
+| `check_unit()` | `unit:str`  |  | Checks if the unit is in the units dictionary and thus if is supported | `Bool` like object |
+| `convert()` | `unit:str`  | `factor:str=None` | Converts the object to the unit specified in the unit argument. <br />
+If `factor` is provide it will use the it as the conversion factor to perform the operation otherwise it will use the conversion that are located in the dictionary units| `Bool` like object |
 
 
 
