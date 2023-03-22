@@ -110,11 +110,15 @@ class CivilEngUnits:
             unit = re.sub(s, r"", unit)
             unit = unit.replace("(", "")
             unit = unit.replace(")", "")    
-            for i in range(len(aux)):
-                aux[i] = aux[i].replace(".","/")
-                aux[i] = "/"+aux[i]
-                unit = unit + aux[i]
-            self.unit = unit
+            def aux_f(aux):
+                aux = aux.replace(".", "/")
+                ux = "/"+aux
+                return aux
+            vaux_f = np.vectorize(aux_f)
+            aux = np.array(aux)
+            aux = vaux_f(aux)
+            aux = "".join(aux)
+            unit = unit + aux
         elif "(" in unit or ")" in unit: 
             raise ValueError("The unit is not valid")  
         return unit
