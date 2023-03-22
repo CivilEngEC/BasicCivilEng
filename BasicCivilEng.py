@@ -1,13 +1,16 @@
-#Module of messurement units
-"""Module of messurement units for Civil Engineerig"""
+#BasicCivilEng.py
+
+"""A module that will contain basic Civil Engineering Classes and Functions 
+for developing free, open-source Software in python"""
+
 import re
 import numpy as np
 import sympy as sym
 
 class CivilEngUnits:
-    """This class will constitude a blueprint and parent class for messurement in Civil Engineering
-    -the value messure of the physical quantity
-    -the unit of the physical quantity
+    """This class will constitute a blueprint and parent class for Units in Civil Engineering
+    -the value is the measure of the physical quantity
+    -the unit use for measure the physical quantity
     -the decimal places that you want to show in the string representation of the object
     """
    
@@ -54,18 +57,18 @@ class CivilEngUnits:
         else:
             return False
     
-    def convert(self, unit:str, conversion:float=None):
+    def convert(self, unit:str, factor:float=None):
         """Converts the value of the object to the unit specified in the unit argument."""
 
-        if conversion:
-            self.value = self.value * conversion
+        if factor:
+            self.value = self.value * factor
             self.unit = unit
-            return self
+            
         else:
             if self.check_unit(unit):
                 self.value = self.value * self.units[self.unit] / self.units[unit]
                 self.unit = unit
-                return self
+                
             else:
                 raise ValueError("Unit not supported, please specify a conversion factor")
     
@@ -79,9 +82,13 @@ class CivilEngUnits:
         except AttributeError:
             return False
     
-    def edit_units(self, unit:str, value:float):
+    def get_units(self):
+        """Returns the units dictionary."""
+        return self.units
+    
+    def edit_units(self, unit:str, factor:float):
         """Adds  a new unit or edit a Existing one in the units dictionary."""
-        self.units[unit] = value
+        self.units[unit] = factor
 
     def remove_unit(self, unit:str):
         """Removes a unit from the units dictionary."""
@@ -90,10 +97,6 @@ class CivilEngUnits:
         else:
             raise ValueError("The unit is not in the units dictionary")
 
-    def get_units(self):
-        """Returns the units dictionary."""
-        return self.units
-    
     def set_units(self, units:dict):
         """Sets the units dictionary."""
         self.units = units
@@ -422,6 +425,7 @@ class CivilEngUnits:
         return self.__class__(self.value // 1 + 1, self.unit)
     def __trunc__(self):
         return self.__class__(self.value // 1, self.unit)
+    
     
    
 
