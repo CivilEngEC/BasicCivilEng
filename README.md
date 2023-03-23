@@ -26,7 +26,7 @@ pip install BasicCivilEng
 ### List of all Classes and argument
 | Class | Required Arguments | Optional Arguments |
 | -- | -- | -- |
-| `CivilEngUnits` | `value: float, unit: str`  | `decimal: int` |
+| `CivilEngUnits` | `value: float, unit: str`  | `decimal: int`, `name: str`  |
 
 ### Class CivilEngUnits
 This class will constitute a blueprint and parent class for Units in Civil Engineering
