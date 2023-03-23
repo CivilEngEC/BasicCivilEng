@@ -37,6 +37,9 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 -`decimal(int)`: the number of significance decimal that will be use to represent as string  <br />
 -`name(str)`: the name of the physical quantity that is messure by this class <br />
 -`units(dict)`: The dictionary's keys are the symbols of the units that the class will support, and the values are the conversion factors of the unit. <br />
+-`base_units(dict)`: Dictonary that contain the main physical quantities and its units in Civil Engineering. <br />
+-`ListOfUnits(array)`: Array that contain all main units. <br />
+
 
 #### Methods
 -It allows all the basic arithmetic `+,-,*,/` while checking the unit consistency. It can only add or subtract similar units. It can multiply and divide by any given unit or numerical value..<br />
