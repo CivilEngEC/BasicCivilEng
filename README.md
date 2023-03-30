@@ -1,4 +1,4 @@
-# BasicCivilEng.py
+# EngUnits.py
 ## Content
 -[Introduction](#Introductio)  <br />
 -[Installation](#Installation)  <br />
@@ -33,12 +33,13 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 
 #### Atributes
 -`value(float)`: the magnitude measure of the physical quantity  <br />
--`unit(str)`: the unit used for the measurement of the physical quantity  <br />
+-`symbol(str)`: the symbol use for represent the unit used for the measurement of the physical quantity  <br />
 -`decimal(int)`: the number of significance decimal that will be use to represent as string  <br />
 -`name(str)`: the name of the physical quantity that is messure by this class <br />
--`units(dict)`: The dictionary's keys are the symbols of the units that the class will support, and the values are the conversion factors of the unit. <br />
--`base_units(dict)`: Dictonary that contain the main physical quantities and its units in Civil Engineering. <br />
--`ListOfUnits(array)`: Array that contain all main units. <br />
+-`units(DataFrame)`: The DataFrame contain the symbols as index and the fields Name, Factor and Equation. <br />
+-`dic_units(dict)`: Dictonary that contain the main physical quantities and its units DataFrame. <br />
+-`all_units(list)`: List that contain all units. <br />
+-`unit_system(dic)`: dic that contain all main units. <br />
 
 
 #### Methods
@@ -46,16 +47,20 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 -It can compare measurement of the same physical quantity with the operators `==,>=,<=,>,>,<,!=`. <br />
 | Method | Required Arguments | Optional Arguments | Operation | Return | 
 | -- | -- | -- | -- | -- |
-| `from_string()` | `string:str`  |  | It creates a new object from a string with the value and the unit separated by a space. | `CivilEngUnits` like object |
-| `check_unit()` | `unit:str`  |  | It checks if the unit is in the ´units´ dictionary and, thus, if it is supported | `Bool` True if the unit is in units False otherwise |
-| `convert()` | `unit:str`  | `factor:str=None` | It converts the object to the unit specified in the unit argument. If a `factor` is provided, it will use as the conversion factor to perform the operation. Otherwise, it will use the conversion that is located in the dictionary `units`.|  |
+| `from_string()` | `string:str`  |  | It upddate the value and symbol of an object from a string with the value and the symbol separated by a space. | `CivilEngUnits` like object |
 | `check_relationship()` | `other`  |  | It verifies if the object have the same parent Object.| `Bool` True if they are related by the same parent, False otherwise |
+| `check_unit()` | `unit:str`  |  | It checks if the symbol use to represent the unit it is used already by other unit in the object | The name of the physical quantity that use unit with a similar simbol if the unit is already in used or False otherwise |
 | `get_units()` |  |  | It return the `units` dictionary of the object | `units:dict` |
-| `edit_units()` | `unit:str`, `factor:float`  |  | It add a new `unit` with a new `factor` or it update a existing `unit` with a given `factor`|  |
-| `remove_unit()` | `unit:str` |  | It remove the given `unit` from the `units` dictionary |  |
-| `set_units()` | `units:dict` |  | It set the `units` dictionary of the object |  |
-| `simplify_un()` | |  | It performs an algebraic simplification of the `unit` of the object | `unit:str` |
-| `simplify()` | `unit:str` |  `units:dict=None` |  It performs an algebraic simplification of the `unit` of the object. And convert all the units of the same physical quantity to the given `unit` string in the argument. If a `units` dictionary is provided, it uses this dictionary to operate. Otherwise, it will use the `units` dictionary the object provides. | `unit:str` |
+| `add_unit()` | `unit:str`, `factor:float`  | `name:str`, `equation:str`   | It add a new record to the `units` DataFrame, with|  |
+| `remove_unit()` | `unit:str` |  | It remove the record of the given `unit` from the `units` DataFrame |  |
+| `empty_units()` | |  | It creates an empty  `units` DataFrame | `units:DataFrame`  |
+| `set_physical_quantity()` | `name:str`, `units:DataFrame`  |  | It asign the `units` DataFrame to `name` physical quantity in the `dic_units` dictionary  |  |
+| `set_units()` | `units:DataFrame` |  | It set the `units` DataFrame of the object and update the `dic_units` dictionary |  |
+
+| `simplify_un()` | |  | It performs an algebraic simplification of the `symbol` of the object and update the object | `unit:str` |
+| `simplify()` | `unit:str` |  `units:DataFrame=None` |  It performs an algebraic simplification of the `unit` of the object. And convert all the units of the same physical quantity to the given `unit` string in the argument. If a `units` DataFrame is provided, it uses this DataFrame to operate. Otherwise, it will use the `units` DataFrame the object provides. | `unit:str` |
+| `convert()` | `unit:str`  | `factor:str=None` | It converts the object to the unit specified in the unit argument. If a `factor` is provided, it will use as the conversion factor to perform the operation. Otherwise, it will try to mach to any of the given units inside `units` DataFrame the object.|  |
+
 
 
 
