@@ -10,7 +10,7 @@ A module that will contain basic Civil Engineering Classes and Functions for dev
 ## Documentation
 ### Installation and usage
 ```
-pip install BasicCivilEng
+
 ```
 
 **Requirements**
@@ -20,7 +20,7 @@ pip install BasicCivilEng
 "numpy",
 "pandas",
 "sympy",
-"matplotlib"
+
 ```
 > **Note** All requirements will be installed automatically while installing this module.
 ### List of all Classes and argument
@@ -55,10 +55,11 @@ This class will constitute a blueprint and parent class for Units in Civil Engin
 | `remove_unit()` | `unit:str` |  | It remove the record of the given `unit` from the `units` DataFrame |  |
 | `empty_units()` | |  | It creates an empty  `units` DataFrame | `units:DataFrame`  |
 | `set_physical_quantity()` | `name:str`, `units:DataFrame`  |  | It asign the `units` DataFrame to `name` physical quantity in the `dic_units` dictionary  |  |
+| `set_unit_system()` | `system_dic:dic` |  | It set the `unit_system()` DataFrame of the object |  |
 | `set_units()` | `units:DataFrame` |  | It set the `units` DataFrame of the object and update the `dic_units` dictionary |  |
-
 | `simplify_un()` | |  | It performs an algebraic simplification of the `symbol` of the object and update the object | `unit:str` |
 | `simplify()` | `unit:str` |  `units:DataFrame=None` |  It performs an algebraic simplification of the `unit` of the object. And convert all the units of the same physical quantity to the given `unit` string in the argument. If a `units` DataFrame is provided, it uses this DataFrame to operate. Otherwise, it will use the `units` DataFrame the object provides. | `unit:str` |
+| `simplify_all()` | |  | It performs an algebraic simplification of the `symbol` of the object and update the object, using the `unit_system()` | `unit:str` |
 | `convert()` | `unit:str`  | `factor:str=None` | It converts the object to the unit specified in the unit argument. If a `factor` is provided, it will use as the conversion factor to perform the operation. Otherwise, it will try to mach to any of the given units inside `units` DataFrame the object.|  |
 
 
