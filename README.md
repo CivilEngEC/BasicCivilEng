@@ -22,7 +22,7 @@ A module that will contain basic Civil Engineering Classes and Functions for dev
 "sympy",
 
 ```
-> **Note** All requirements will be installed automatically while installing this module.
+> **Note** 
 ### List of all Classes and argument
 | Class | Required Arguments | Optional Arguments |
 | -- | -- | -- |
