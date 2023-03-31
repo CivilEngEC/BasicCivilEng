@@ -218,7 +218,7 @@ class CivilEngUnits:
                             "LuminousFlux": LFlux,
                             "Iluminance": iluminance}
 
-        columns = ["Name", "Symbol", "Factor", "Equation"]
+        columns = ["Name", "Symbol", "Factor", "Description"]
         
 
         def to_df(dic):
@@ -232,20 +232,20 @@ class CivilEngUnits:
                 dic[d].set_index("Symbol", inplace=True)
           return dic
         
-        self.default_units = to_df(self.dic_units)
+        to_df(self.dic_units)
 
         #List of all symbols units in the class
         L =[]
         #Check if there are repeated units symbols
         for d in self.dic_units:
             L = L + self.dic_units[d].index.tolist()
+        self.all_units = L
         L = np.array(L)
         L,c = np.unique(L, return_counts=True)
         if np.any(c>1):
             raise ValueError("The are repeated symbols in the units database")
-        self.all_units = L
         #Set the units dataframe
-        if  self.name not in self.default_units:
+        if  self.name not in self.dic_units:
             self.dic_units[self.name] = pd.DataFrame(columns=columns)
             self.dic_units[self.name] = self.dic_units[self.name].set_index("Symbol")
             self.units = self.dic_units[self.name]
@@ -298,27 +298,28 @@ class CivilEngUnits:
             raise ValueError("""The input string is not in the correct format. 
                              An example of the correct formtat is '2 m'""")
     
-    def check_relationship(self, other):
+    def is_related(self, other):
         """Checks if the object are related one another."""
         
         try:
-            if self._CivilEngUnits__parent == other._CivilEngUnits__parent:
+            if issubclass(type(other), CivilEngUnits):
                 return True
             else:
                 return False
-        except AttributeError:
+        except:
             return False
-    
-    def check_unit(self, unit:str=None):
+        
+    def find_unit(self, unit:str=None):
         """Checks if the unit is supported by the object.
         Returns name where the unit is allocated and False if not."""
+    
         if unit is None:
             unit = self.symbol
-      
-        if unit in self.all_units:
 
+        if unit in self.all_units:
+            print("here")
             for d in self.dic_units:
-                if unit in self.default_units[d].index:
+                if unit in self.dic_units[d].index:
                     name = d
                     break
             return name
@@ -329,16 +330,17 @@ class CivilEngUnits:
         """Returns the units Dataframe."""
         return self.units
     
-    def add_unit(self, symbol:str, factor:float, name:str="", equation:str=""):
+    def add_unit(self, symbol:str, factor:float, name:str="", Description:str=""):
         """Adds a new unit to the units DataFrame."""
         if not isinstance(symbol, str):
             raise TypeError("The unit must be a string")
         if not isinstance(factor, (int, float)):
             raise TypeError("The factor must be a number")
-        if self.check_unit(symbol):
-           raise ValueError(f"""The symbol is already used by the object for messure {self.check_unit()}, please use another symbol""")
+        if self.find_unit(symbol):
+           raise ValueError(f"""The symbol is already used by the object for messure {self.find_unit()}, please use another symbol""")
         else:
-            self.dic_units[self.name].loc[symbol] = [name, factor, equation]
+            self.dic_units[self.name].loc[symbol] = [name, factor, Description]
+            self.all_units = self.all_units.append(symbol)
 
     def remove_unit(self, symbol:str):
         """Removes a unit from the unit DataFrame."""
@@ -346,16 +348,25 @@ class CivilEngUnits:
             raise TypeError("The unit must be a string")
         if symbol in self.units.index:
            self.units.drop(symbol, inplace=True)
+           self.all_units = self.all_units.remove(symbol)
         else:
             raise ValueError("The unit is not in the unit DataFrame")
-
+    def empty_units(self):
+        """Cretes an empty units DataFrame the units Dataframe."""
+        return pd.DataFrame(columns=["Name", "Symbol", "Factor", "Description"])
+    
+    def update_units(self):
+        """Updates the units DataFrame."""
+        self.units = self.dic_units[self.name]
+    
+    
     def set_physical_quantity(self, name:str, units:pd.DataFrame):
         
         """Sets the physical quantity name of the object."""
         if not isinstance(units, pd.DataFrame):
             raise TypeError("The units must be a dataframe")
-        if not set(units.columns) == set(["Name", "Symbol", "Factor", "Equation"]):
-            raise ValueError("The units dataframe must have the columns Name, Symbol, Factor and Equation")
+        if not set(units.columns) == set(["Name", "Symbol", "Factor", "Description"]):
+            raise ValueError("The units dataframe must have the columns Name, Symbol, Factor and Description")
         if not np.all(units["Symbol"].apply(lambda x: isinstance(x, str))):
             raise ValueError("The symbol column must contain string values")
         if not np.all(units["Factor"].apply(lambda x: isinstance(x, (int, float)))):
@@ -364,15 +375,29 @@ class CivilEngUnits:
             raise ValueError("At least one unit has to have the factor 1")
         if not isinstance(name, str):
             raise TypeError("The name must be a string")
-            
+          
         #Check if there are repeated units symbols
         
         if name not in self.dic_units:
             for row in units.iterrows():
-                if self.check_unit(row[1]["Symbol"]):
-                    raise ValueError(f"""The symbol {row[1]["Symbol"]} is already used by the object for messure {self.check_unit(row[1]["Symbol"])}, please use another symbol""")
+                if self.find_unit(row[1]["Symbol"]):
+                    raise ValueError(f"""The symbol {row[1]["Symbol"]} is already used by the object for messure {self.find_unit(row[1]["Symbol"])}, please use another symbol""")
                 else:
-                    continue
+                    self.all_units.append(row[1]["Symbol"])
+        else:
+            if self.dic_units[name].index.tolist() == []:
+                pass
+            else:
+                for x in self.dic_units[name].index:
+                    self.all_units.remove(x)       
+            for x in units["Symbol"].tolist():
+                print(x)
+
+                if self.find_unit(x):
+                    raise ValueError(f"""The symbol {x} is already used by the object for messure {self.find_unit(x)}, please use another symbol""")
+                else:
+                    self.all_units.append(x)
+
         units = units.set_index("Symbol")
         self.dic_units[name] = units 
     
@@ -380,14 +405,14 @@ class CivilEngUnits:
     
     def set_units(self, units:pd.DataFrame, name:str):
         """Sets the units Dataframe.
-        unit must be a DataFrame with the columns Name, Symbol, Factor and Equation
+        unit must be a DataFrame with the columns Name, Symbol, Factor and Description
         The factor  columnn must contain number values and at least one row must have the factor column = 1.
         The symbol column must contain string values."""
         
         if not isinstance(units, pd.DataFrame):
             raise TypeError("The units must be a dataframe")
-        if not set(units.columns) == set(["Name", "Symbol", "Factor", "Equation"]):
-            raise ValueError("The units dataframe must have the columns Name, Symbol, Factor and Equation")
+        if not set(units.columns) == set(["Name", "Symbol", "Factor", "Description"]):
+            raise ValueError("The units dataframe must have the columns Name, Symbol, Factor and Description")
         if not np.all(units["Symbol"].apply(lambda x: isinstance(x, str))):
             raise ValueError("The symbol column must contain string values")
         if not np.all(units["Factor"].apply(lambda x: isinstance(x, (int, float)))):
@@ -398,13 +423,25 @@ class CivilEngUnits:
             raise TypeError("The name must be a string")
             
         #Check if there are repeated units symbols
-        
+     
         if name not in self.dic_units:
             for row in units.iterrows():
-                if self.check_unit(row[1]["Symbol"]):
-                    raise ValueError(f"""The symbol {row[1]["Symbol"]} is already used by the object for messure {self.check_unit(row[1]["Symbol"])}, please use another symbol""")
+                if self.find_unit(row[1]["Symbol"]):
+                    raise ValueError(f"""The symbol {row[1]["Symbol"]} is already used by the object for messure {self.find_unit(row[1]["Symbol"])}, please use another symbol""")
                 else:
-                    continue
+                   self.all_units.append(row[1]["Symbol"])
+        else:
+            if self.dic_units[name].index.tolist() == []:
+                pass
+            else:
+                for x in self.dic_units[name].index:
+                    self.all_units.remove(x)       
+            for x in units["Symbol"].tolist():
+                if self.find_unit(x):
+                    raise ValueError(f"""The symbol {x} is already used by the object for messure {self.find_unit(x)}, please use another symbol""")
+                else:
+                    self.all_units.append(x)
+
         units = units.set_index("Symbol")
         self.dic_units[name] = units 
         self.units = units
@@ -592,7 +629,7 @@ class CivilEngUnits:
             self.symbol = unit
             
         else:
-            if self.check_unit(unit):
+            if self.find_unit(unit):
                 factor = self.units.loc[self.symbol]["Factor"] / self.units.loc[unit]["Factor"]
                 self.value = self.value * factor
                 self.unit = unit
@@ -606,7 +643,7 @@ class CivilEngUnits:
     def __add__(self, other):
         """Adds two objects of the same class and returns a new object of the same class."""
         
-        if self.check_relationship(other) and self.name == other.name:
+        if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
                 if self.symbol in self.units.index and other.symbol in self.units.index:
                     factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
@@ -626,7 +663,7 @@ class CivilEngUnits:
 
     def __sub__(self, other):
 
-        if self.check_relationship(other) and self.name == other.name:
+        if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
                 if self.symbol in self.units.index and other.symbol in self.units.index:
                     factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
@@ -645,7 +682,7 @@ class CivilEngUnits:
             raise TypeError(f"Can only substract {self.name} quantities")
         
     def __mul__(self, other):
-        if self.check_relationship(other) or isinstance(other, (int, float)):
+        if self.is_related(other) or isinstance(other, (int, float)):
             try:
                 result = self.__class__(self.value * other.value, self.symbol +"*"+ other.symbol)
                 return result
@@ -656,7 +693,7 @@ class CivilEngUnits:
             raise TypeError("Can only multiply by similar or numbers like objects")
         
     def __truediv__(self, other):
-        if self.check_relationship(other) or isinstance(other, (int, float)):
+        if self.is_related(other) or isinstance(other, (int, float)):
             try:
                 other.symbol = other.symbol.replace("*", "?")
                 other.symbol = other.symbol.replace("/", "*")
@@ -686,7 +723,7 @@ class CivilEngUnits:
     #Inplace operators
 
     def __iadd__(self, other):
-        if self.check_relationship(other) and self.name == other.name:
+        if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
                 if self.symbol in self.units.index and other.symbol in self.units.index:
                     factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
@@ -703,7 +740,7 @@ class CivilEngUnits:
             raise TypeError(f"Can only add {self.name} quantities")
         
     def __isub__(self, other):
-        if self.check_relationship(other) and self.name == other.name:
+        if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
                 if self.symbol in self.units.index and other.symbol in self.units.index:
                     factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
@@ -720,7 +757,7 @@ class CivilEngUnits:
             raise TypeError(f"Can only substract {self.name} quantities")
           
     def __imul__(self, other):
-        if self.check_relationship(other) or isinstance(other, (int, float)):
+        if self.is_related(other) or isinstance(other, (int, float)):
             try:
                 self.value *= other.value
                 self.symbol = self.symbol+ "*" + other.symbol
@@ -731,7 +768,7 @@ class CivilEngUnits:
             raise TypeError("Can only multiply by similar or numbers like objects")
 
     def __itruediv__(self, other):
-        if self.check_relationship(other) or isinstance(other, (int, float)):
+        if self.is_related(other) or isinstance(other, (int, float)):
             try:
                 other.symbol = other.symbol.replace("*", "?")
                 other.symbol = other.symbol.replace("/", "*")
@@ -747,14 +784,14 @@ class CivilEngUnits:
     #Comparison operators
 
     def __eq__(self, other):
-        if self.check_relationship(other):
+        if self.is_related(other):
             a = self.value * self.units.loc[self.symbol]["Factor"]
             b = other.value * self.units.loc[other.symbol]["Factor"]
             return a == b
         else:
             raise TypeError("Can only compare similar objects")
     def __ne__(self, other):
-        if self.check_relationship(other):
+        if self.is_related(other):
             a = self.value * self.units.loc[self.symbol]["Factor"]
             b = other.value * self.units.loc[other.symbol]["Factor"]
             return a != b
@@ -762,7 +799,7 @@ class CivilEngUnits:
             raise TypeError("Can only compare similar objects")
         
     def __lt__(self, other):
-        if self.check_relationship(other):
+        if self.is_related(other):
             a = self.value * self.units.loc[self.symbol]["Factor"]
             b = other.value * self.units.loc[other.symbol]["Factor"]
             return a < b
@@ -770,7 +807,7 @@ class CivilEngUnits:
             raise TypeError("Can only compare similar objects")
         
     def __le__(self, other):
-        if self.check_relationship(other):
+        if self.is_related(other):
             a = self.value * self.units.loc[self.symbol]["Factor"]
             b = other.value * self.units.loc[other.symbol]["Factor"]
             return a <= b
@@ -778,7 +815,7 @@ class CivilEngUnits:
             raise TypeError("Can only compare similar objects")
         
     def __gt__(self, other):
-       if self.check_relationship(other):
+       if self.is_related(other):
             a = self.value * self.units.loc[self.symbol]["Factor"]
             b = other.value * self.units.loc[other.symbol]["Factor"]
             return a > b
@@ -786,7 +823,7 @@ class CivilEngUnits:
             raise TypeError("Can only compare similar objects")
         
     def __ge__(self, other):
-       if self.check_relationship(other):
+       if self.is_related(other):
             a = self.value * self.units.loc[self.symbol]["Factor"]
             b = other.value * self.units.loc[other.symbol]["Factor"]
             return a >= b
