@@ -7,37 +7,47 @@ import re
 import numpy as np
 import pandas as pd
 import sympy as sym
+import matplotlib.pyplot as plt
+import datetime
 
-class CivilEngUnits:
-    """This class will constitute a blueprint and parent class for Units in Civil Engineering
-    -the value is the measure of the physical quantity
-    -the unit use for measure the physical quantity
-    -the decimal places that you want to show in the string representation of the object
-    -the name of the physical quantity by default there are 12 physical quantities:
-    ["Time", "Length", "Mass", "ElectricCurrent", "Temperature", "Luminus Intensity", "Angle"
-    "Area", "Volume", "Force", "Pressure", "Energy", "Power", "ElectricCharge", "ElectricPotential",
-    "LuminousFlux", "Iluminance"]
-    By default the decimal places is 3 and the name is "Lenght" and the main units are SI units
-    """
-   
-    def __init__(self, value:float, symbol:str, decimal:int=3, name:str="Length"):
-        
-        self.__parent = "CivilEngUnits" #Name of the parent class 
-        
-        #Check the type of the arguments
-        if not isinstance(value, (int, float)):
-            raise TypeError("The value must be a number")
-        if not isinstance(symbol, str):
+def remove_parenthesis_un(unit:str):
+        """Removes the parenthesis in the unit of the object."""
+        if not isinstance(unit, str):
             raise TypeError("The unit must be a string")
-        if not isinstance(decimal, int):
-            raise TypeError("The decimal places must be an integer")
-        if not isinstance(name, str):
-            raise TypeError("The name of the physical quantity must be a string")
-        
-        self.name = name #Name of the physical quantity
-        self.value = value
-        self.symbol = symbol
-        self.decimal = decimal
+
+        if "(" in unit and ")" in unit:
+            #Clear the parenthesis from exponentials
+            p = re.compile(r"""\^\(\-?\d+\.?\d*\)""" , re.X)
+            for i in re.finditer(p, unit):
+                t = i.group()
+                q = t.replace("(","")
+                q = q.replace(")","")
+                unit = unit.replace(t,q)
+            #Clear Parenthesis from division and multiplication   
+            s = re.compile(r"""/\((.+?)\)""" , re.X)
+            aux = re.findall(s, unit)
+            unit = re.sub(s, r"", unit)
+            unit = unit.replace("(", "")
+            unit = unit.replace(")", "")  
+            def aux_f(aux):
+                aux = aux.replace("*", "?")
+                aux = aux.replace("/", "*")
+                aux = aux.replace("?", "/")
+                aux = "/"+aux
+                return aux
+            vaux_f = np.vectorize(aux_f)
+            aux = np.array(aux)
+            if list(aux) != []:
+                aux = vaux_f(aux)
+                aux = "".join(aux)
+                unit = unit + aux
+        elif "(" in unit or ")" in unit: 
+            raise ValueError("The unit is not valid")  
+        return unit
+
+class Units:
+    """This class will constitute a blueprint and parent class for Units of messurement in Engineering"""
+    def __init__(self):
         #Units and their conversion to the main unit
         #time
         Time = [
@@ -220,7 +230,6 @@ class CivilEngUnits:
 
         columns = ["Name", "Symbol", "Factor", "Description"]
         
-
         def to_df(dic):
           for d in dic:
             if len(dic[d][0]) == 3:
@@ -244,14 +253,7 @@ class CivilEngUnits:
         L,c = np.unique(L, return_counts=True)
         if np.any(c>1):
             raise ValueError("The are repeated symbols in the units database")
-        #Set the units dataframe
-        if  self.name not in self.dic_units:
-            self.dic_units[self.name] = pd.DataFrame(columns=columns)
-            self.dic_units[self.name] = self.dic_units[self.name].set_index("Symbol")
-            self.units = self.dic_units[self.name]
-        else:
-            self.units = self.dic_units[self.name]
-        #Set the default units system
+        
         self.unit_system = {"Time": "s",
                             "Length": "m",
                             "Mass": "kg",
@@ -269,55 +271,12 @@ class CivilEngUnits:
                             "ElectricPotential": "V",
                             "LuminousFlux": "lm",
                             "Iluminance": "lx"}
-        
-    #Magic Methods
-    def __repr__(self):
-        return f"{self.name}:({self.value}, '{self.symbol}')"
-    
-    def __float__(self):
-        return float(self.value)
-    
-    def __int__(self):
-        return int(self.value)
-    
-    def __str__(self):
-        return f"{round(self.value,self.decimal):,} {self.symbol}"
-    
-    #Methods
-
-    def from_string(self, string:str):
-        """Creates a new object from a string with the value and the unit separated by a space"""
-        if not isinstance(string, str):
-            raise TypeError("The input must be a string")
-        string = string.split()
-        try:    
-            self.value = float(string[0].replace(",", ""))
-            self.symbol = string[1]
-            return self
-        except:
-            raise ValueError("""The input string is not in the correct format. 
-                             An example of the correct formtat is '2 m'""")
-    
-    def is_related(self, other):
-        """Checks if the object are related one another."""
-        
-        try:
-            if issubclass(type(other), CivilEngUnits):
-                return True
-            else:
-                return False
-        except:
-            return False
-        
-    def find_unit(self, unit:str=None):
+   
+    def find_unit(self, unit):
         """Checks if the unit is supported by the object.
         Returns name where the unit is allocated and False if not."""
-    
-        if unit is None:
-            unit = self.symbol
 
         if unit in self.all_units:
-            print("here")
             for d in self.dic_units:
                 if unit in self.dic_units[d].index:
                     name = d
@@ -325,86 +284,57 @@ class CivilEngUnits:
             return name
         else:
             return False
-    
-    def get_units(self):
-        """Returns the units Dataframe."""
-        return self.units
-    
-    def add_unit(self, symbol:str, factor:float, name:str="", Description:str=""):
-        """Adds a new unit to the units DataFrame."""
-        if not isinstance(symbol, str):
-            raise TypeError("The unit must be a string")
-        if not isinstance(factor, (int, float)):
-            raise TypeError("The factor must be a number")
-        if self.find_unit(symbol):
-           raise ValueError(f"""The symbol is already used by the object for messure {self.find_unit()}, please use another symbol""")
-        else:
-            self.dic_units[self.name].loc[symbol] = [name, factor, Description]
-            self.all_units = self.all_units.append(symbol)
-
-    def remove_unit(self, symbol:str):
-        """Removes a unit from the unit DataFrame."""
-        if not isinstance(symbol, str):
-            raise TypeError("The unit must be a string")
-        if symbol in self.units.index:
-           self.units.drop(symbol, inplace=True)
-           self.all_units = self.all_units.remove(symbol)
-        else:
-            raise ValueError("The unit is not in the unit DataFrame")
-    def empty_units(self):
-        """Cretes an empty units DataFrame the units Dataframe."""
-        return pd.DataFrame(columns=["Name", "Symbol", "Factor", "Description"])
-    
-    def update_units(self):
-        """Updates the units DataFrame."""
-        self.units = self.dic_units[self.name]
-    
-    
-    def set_physical_quantity(self, name:str, units:pd.DataFrame):
         
-        """Sets the physical quantity name of the object."""
-        if not isinstance(units, pd.DataFrame):
-            raise TypeError("The units must be a dataframe")
-        if not set(units.columns) == set(["Name", "Symbol", "Factor", "Description"]):
-            raise ValueError("The units dataframe must have the columns Name, Symbol, Factor and Description")
-        if not np.all(units["Symbol"].apply(lambda x: isinstance(x, str))):
-            raise ValueError("The symbol column must contain string values")
-        if not np.all(units["Factor"].apply(lambda x: isinstance(x, (int, float)))):
-            raise ValueError("The factor column must contain number values")
-        if not np.any(units["Factor"] == 1):
-            raise ValueError("At least one unit has to have the factor 1")
+    def append(self, name:str, record:list):
+        """Append a new unit to the units DataFrame.
+        name must be a string with the name of the physical quantity.
+        ther reord must be a list with the following structure:
+        [name, symbol, factor, Description]"""
         if not isinstance(name, str):
             raise TypeError("The name must be a string")
-          
-        #Check if there are repeated units symbols
-        
-        if name not in self.dic_units:
-            for row in units.iterrows():
-                if self.find_unit(row[1]["Symbol"]):
-                    raise ValueError(f"""The symbol {row[1]["Symbol"]} is already used by the object for messure {self.find_unit(row[1]["Symbol"])}, please use another symbol""")
-                else:
-                    self.all_units.append(row[1]["Symbol"])
+        try:
+            record = list(record)
+        except:
+            raise TypeError("The record must be a list like object")
+        if len(record) != 4:
+            raise ValueError("The record must have 4 elements")
+        if not isinstance(record[0], str):
+            raise TypeError("The name must be a string")
+        if not isinstance(record[1], str):
+            raise TypeError("The symbol must be a string")
+        if not isinstance(record[2], (int, float)):
+            raise TypeError("The factor must be a number")
+        if self.find_unit(record[1]):
+           raise ValueError(f"""The symbol {record[1]} is already used by the object for messure {self.find_unit(record[1])}, please use another symbol""")
         else:
-            if self.dic_units[name].index.tolist() == []:
-                pass
-            else:
-                for x in self.dic_units[name].index:
-                    self.all_units.remove(x)       
-            for x in units["Symbol"].tolist():
-                print(x)
+            symbol = record[1]
+            record = pd.DataFrame([record], columns=["Name", "Symbol", "Factor", "Description"])
+            record =  record.set_index("Symbol")
+            self.dic_units[name] =  pd.concat([self.dic_units[name], record])
+            self.all_units.append(symbol)
 
-                if self.find_unit(x):
-                    raise ValueError(f"""The symbol {x} is already used by the object for messure {self.find_unit(x)}, please use another symbol""")
-                else:
-                    self.all_units.append(x)
-
-        units = units.set_index("Symbol")
-        self.dic_units[name] = units 
-    
-    
+    def remove(self, symbol:str):
+        """Removes a unit from the unit DataFrame."""
+        name =  self.find_unit(symbol)
+        if name:
+            self.dic_units[name].drop(symbol, inplace=True)
+            self.all_units.remove(symbol)
+        else:
+            raise ValueError("The unit is not find inside the object")
+        
+    def empty(self, name:str):
+        """Empty units DataFrame from the name physical quantity."""
+        if not isinstance(name, str):
+            raise TypeError("The name must be a string")
+        if name in self.dic_units:
+            for symbol in self.dic_units[name].index:
+                self.all_units.remove(symbol)
+            self.dic_units[name] = pd.DataFrame(columns=["Name", "Symbol", "Factor", "Description"])
+        else:
+            raise ValueError("The name of the physical quantity is not find inside the object")
     
     def set_units(self, units:pd.DataFrame, name:str):
-        """Sets the units Dataframe.
+        """Sets the units Dataframe of a given physical quantities.
         unit must be a DataFrame with the columns Name, Symbol, Factor and Description
         The factor  columnn must contain number values and at least one row must have the factor column = 1.
         The symbol column must contain string values."""
@@ -444,153 +374,8 @@ class CivilEngUnits:
 
         units = units.set_index("Symbol")
         self.dic_units[name] = units 
-        self.units = units
-        self.name = name
+        self.unit_system[name] = units.loc[units["Factor"] == 1].index[0]
 
-    
-    def remove_parenthesis_un(self):
-        """Removes the parenthesis in the unit of the object."""
-        unit = self.symbol
-        if "(" in unit and ")" in unit:
-            #Clear the parenthesis from exponentials
-            p = re.compile(r"""\^\(\-?\d+\.?\d*\)""" , re.X)
-            for i in re.finditer(p, unit):
-                t = i.group()
-                q = t.replace("(","")
-                q = q.replace(")","")
-                unit = unit.replace(t,q)
-            #Clear Parenthesis from division and multiplication   
-            s = re.compile(r"""/\((.+?)\)""" , re.X)
-            aux = re.findall(s, unit)
-            unit = re.sub(s, r"", unit)
-            unit = unit.replace("(", "")
-            unit = unit.replace(")", "")  
-            def aux_f(aux):
-                aux = aux.replace("*", "?")
-                aux = aux.replace("/", "*")
-                aux = aux.replace("?", "/")
-                aux = "/"+aux
-                return aux
-            vaux_f = np.vectorize(aux_f)
-            aux = np.array(aux)
-            if list(aux) != []:
-                aux = vaux_f(aux)
-                aux = "".join(aux)
-                unit = unit + aux
-            self.symbol = unit
-        elif "(" in unit or ")" in unit: 
-            raise ValueError("The unit is not valid")  
-        return unit
-    
-    def simplify_un(self):
-        """Performs an algebraic simplification the unit of the object."""
-        #Check if the unit has parenthesis 
-        self.remove_parenthesis_un()
-        #Pass the unit
-        unit =  self.symbol
-        if re.match(r"\w+", unit) == None:
-            raise ValueError("The unit is not valid")
-        if unit[0] != "1":
-            unit = "*" + unit
-        #Find the units
-        mult_un = re.findall(r"\*(\w+\^?\-?\d*\.?\d*)", unit)
-        div_un = re.findall(r"/(\w+\^?\-?\d*\.?\d*)", unit)
-        def to_symbol(x):
-            arg = re.search(r"[a-zA-Z]+", x).group()
-            c = re.search(r"\-?\d+\.?\d*", x)
-            if c == None:
-                c = 1
-            else:
-                c = c.group()
-                c = float(c)
-                c = round(c, 2)
-            return sym.Symbol(arg)**c
-        v_to_symbol = np.vectorize(to_symbol)
-        new = 1
-        if mult_un != []:
-            mult_un = np.array(mult_un)
-            mult_un = v_to_symbol(mult_un)
-            mult_un = np.prod(mult_un)
-            new *= mult_un
-        if div_un != []:
-            div_un = np.array(div_un)
-            div_un = v_to_symbol(div_un)
-            div_un = np.prod(div_un)
-            new /= div_un
-        new = str(new)
-        new = new.replace("**1.0*", "*")
-        new = new.replace("**1.0/", "/") 
-        if new[-5:] == "**1.0":
-            new = new[:-5]
-        new =  new.replace("**", "^")
-        self.symbol = new
-        return self.symbol
-    
-    def simplify(self, unit:str, units=None):
-        """Simplifies the unit of the object and converts the value to the unit specified in the unit argument.
-        if a units dataframe is provide it will use it to convert the value, 
-        otherwise it will use the units dataframe of the object."""
-
-        if isinstance(units, type(None)):
-            units = self.units
-        else:
-            units.set_index("Symbol", inplace=True)
-        if not isinstance(unit, str):
-            raise TypeError("The unit must be a string")
-        if not isinstance(units, pd.DataFrame):
-            raise TypeError("The units must be a dataframe")
-        if  unit not in units.index:
-            raise ValueError(f"""The unit {unit} is not in the units dataframe. The units of the datframe are {units.index}""")
-        
-        self.simplify_un()
-        self.remove_parenthesis_un()
-        old_unit = self.symbol
-        if old_unit[0] != "1":
-            old_unit = "*" + old_unit
-        mult_un = re.findall(r"\*(\w+\^?\-?\d*\.?\d*)", old_unit)
-        div_un = re.findall(r"/(\w+\^?\-?\d*\.?\d*)", old_unit)
-        def to_symbol(x, y):
-            arg = re.search(r"[a-zA-Z]+", x).group()
-            c = re.search(r"\-?\d+\.?\d*", x)
-            if c == None:
-                c = 1
-            else:
-                c = c.group()
-                c = float(c)
-                c = round(c, 3)
-            if arg in units.index:
-                y = (units.loc[arg]["Factor"]/units.loc[unit]["Factor"])**c
-                arg = unit
-            else:
-                y = 1
-            return sym.Symbol(arg)**c, y
-        v_to_symbol = np.vectorize(to_symbol)
-        value = self.value
-        new = 1
-        if mult_un != []:
-            mult_un = np.array(mult_un)
-            mult_un, mult_un_factor = v_to_symbol(mult_un, np.ones(len(mult_un)))
-            mult_un = np.prod(mult_un)
-            mult_un_factor = np.prod(mult_un_factor)
-            new *= mult_un
-            value *= mult_un_factor
-        if div_un != []:
-            div_un = np.array(div_un)
-            div_un, div_un_factor = v_to_symbol(div_un, np.ones(len(div_un)))
-            div_un = np.prod(div_un)
-            div_un_factor = np.prod(div_un_factor)
-            new /= div_un
-            value /= div_un_factor
-        new = str(new)
-        new = new.replace("**1.0*", "*")
-        new = new.replace("**1.0/", "/") 
-        if new[-5:] == "**1.0":
-            new = new[:-5]
-        new =  new.replace("**", "^")
-        self.symbol = new
-        self.value = value
-        return self
-    
     def set_unit_system (self, system_dic:dict):
         """Set unit sytem for symplify all unit.
         The keys of the dictionary are the physical quantity name and the values are the symbol 
@@ -599,44 +384,209 @@ class CivilEngUnits:
             raise TypeError("The system dictionary must be a dictionary")
         
         for k in system_dic:
-            if  k not in self.dic_units:
-                raise ValueError(f"The key {k} is not recognized as a physical quantity, please add it using .set_physical_quantity")
-            if system_dic[k] in self.dic_units[k].index:
-                raise TypeError(f"The physical quantity {k} does not have the unit {system_dic[k]}")  
-        self.unit_system = system_dic
-       
+            if  k not in self.unit_system:
+                raise ValueError(f"The key {k} is not recognized as a physical quantity, please add it using .set_units")
+            if system_dic[k] not in self.dic_units[k].index:
+                raise TypeError(f"The physical quantity {k} does not have the unit {system_dic[k]}")
+            else:
+                self.unit_system[k] = system_dic[k]  
+        
     
-    def simplify_all(self, system_dic:dict=None):
-        """Simplifies the units of an object using the units dictionary of a system messurement units.
-        By default the system is the SI, but you can use your own system with system_dic.
-        The keys of the dictionary must be the physical quantity and the values must be the main unit
-        of the physical quantity."""
-        if system_dic == None:
-            system_dic = self.unit_system
-        else:
-            self.set_unit_system(system_dic)
-        for k in system_dic:
-            if k  == "Temperature":
-                continue
-            self.simplify(system_dic[k], self.dic_units[k].reset_index())
-        return self
+    def simplify(self, unit:str):
+
+        """Simplifies the unit of the object and converts the value to the unit specified in the unit argument.
+        if a units dataframe is provide it will use it to convert the value, 
+        otherwise it will use the units dataframe of the object."""
+        if not isinstance(unit, str):
+            raise TypeError("The unit must be a string")
+        
+        def to_symbol(x, y):
+                arg = re.search(r"[a-zA-Z]+", x).group()
+                c = re.search(r"\-?\d+\.?\d*", x)
+                if c == None:
+                    c = 1
+                else:
+                    c = c.group()
+                    c = float(c)
+                    c = round(c, 3)
+                if arg in units.index:
+                    y = (units.loc[arg]["Factor"]/units.loc[main_unit]["Factor"])**c
+                    arg = main_unit
+                else:
+                    y = 1
+                return sym.Symbol(arg)**c, y
+        v_to_symbol = np.vectorize(to_symbol)
+        
+        value = 1
+
+        for name in self.dic_units:
+            units = self.dic_units[name]
+            main_unit = self.unit_system[name]
+            old_unit = remove_parenthesis_un(unit)
+            if old_unit[0] != "1":
+                old_unit = "*" + old_unit
+            mult_un = re.findall(r"\*(\w+\^?\-?\d*\.?\d*)", old_unit)
+            div_un = re.findall(r"/(\w+\^?\-?\d*\.?\d*)", old_unit)
+            new = 1
+            if mult_un != []:
+                mult_un = np.array(mult_un)
+                mult_un, mult_un_factor = v_to_symbol(mult_un, np.ones(len(mult_un)))
+                mult_un = np.prod(mult_un)
+                mult_un_factor = np.prod(mult_un_factor)
+                new *= mult_un
+                value *= mult_un_factor
+            if div_un != []:
+                div_un = np.array(div_un)
+                div_un, div_un_factor = v_to_symbol(div_un, np.ones(len(div_un)))
+                div_un = np.prod(div_un)
+                div_un_factor = np.prod(div_un_factor)
+                new /= div_un
+                value /= div_un_factor
+            new = str(new)
+            new = new.replace("**1.0*", "*")
+            new = new.replace("**1.0/", "/") 
+            if new[-5:] == "**1.0":
+                new = new[:-5]
+            new =  new.replace("**", "^")
+            unit = new
+           
+        return unit, value
 
     
-    def convert(self, unit:str, factor:float=None):
-        """Converts the value of the object to the unit specified in the unit argument."""
-        if factor:
-            self.value = self.value * factor
-            self.symbol = unit
-            
+    
+class Quantity:
+    """This class will constitute a blueprint and parent class for Engineering quantities 
+    -the value is the measure of the physical quantity
+    -the unit use for measure the physical quantity
+    -the decimal places that you want to show in the string representation of the object
+    -the name of the physical quantity by default there are 12 physical quantities:
+    ["Time", "Length", "Mass", "ElectricCurrent", "Temperature", "Luminus Intensity", "Angle"
+    "Area", "Volume", "Force", "Pressure", "Energy", "Power", "ElectricCharge", "ElectricPotential",
+    "LuminousFlux", "Iluminance"]
+    By default the decimal places is 3 and the name is "Lenght" and the main units are SI units
+    """
+   
+    def __init__(self, value:float, symbol:str, system_units:Units, decimal:int=3, name:str=""):
+               
+        #Check the type of the arguments
+        if not isinstance(value, (int, float)):
+            raise TypeError("The value must be a number")
+        if not isinstance(symbol, str):
+            raise TypeError("The unit must be a string")
+        if not isinstance(decimal, int):
+            raise TypeError("The decimal places must be an integer")
+        if not isinstance(system_units, Units):
+            raise TypeError("The units must be an instance of the class Units")
+        if not isinstance(name, str):
+            raise TypeError("The name of the physical quantity must be a string")
+        
+        self.name = name #Name of the physical quantity
+        self.value = value
+        self.symbol = symbol
+        self.decimal = decimal
+        self.system_units = system_units
+        if symbol in self.system_units.all_units:
+            self.name = self.system_units.find_unit(symbol)
+        if self.name == "":
+            self.units = {}
+            self.main_unit = ""
+        elif self.name in system_units.dic_units:
+            self.units = system_units.dic_units[self.name]["Factor"].to_dict()
+            self.main_unit = system_units.unit_system[self.name]
         else:
-            if self.find_unit(unit):
-                factor = self.units.loc[self.symbol]["Factor"] / self.units.loc[unit]["Factor"]
-                self.value = self.value * factor
-                self.unit = unit
-                
+            raise ValueError(f"The name of the physical quantity is not supported by the Units object, please use .set_units() method to add the physical quantity to the Units object, the list name that are supported is {system_units.dic_units.keys()}")
+
+    #Magic Methods
+    def __repr__(self):
+        return f"{self.name}:({self.value}, '{self.symbol}')"
+    
+    def __float__(self):
+        return float(self.value)
+    
+    def __int__(self):
+        return int(self.value)
+    
+    def __str__(self):
+        return f"{round(self.value,self.decimal):,} {self.symbol}"
+    
+    #Methods
+   
+    def is_related(self, other):
+        """Checks if the object are related one another."""
+        try:
+            if issubclass(type(other), Quantity):
+                return True
+            else:
+                return False
+        except:
+            return False
+    
+    def get_units(self):
+        """Returns the units Dataframe."""
+        return self.units
+    
+    def update_units(self,name:str, units:Units):
+        """Updates the units DataFrame."""
+        if not isinstance(units, Units):
+            raise TypeError("The units must be an instance of the class Units")
+        if not isinstance(name, str):
+            raise TypeError("The name of the physical quantity must be a string")
+        
+        if name in units.dic_units:
+            self.units = units.dic_units[name]
+            self.main_unit = units.unit_system[name]
+        else:
+            raise ValueError(f"The name of the physical quantity is not supported by the Units object, please use .set_units() method to add the physical quantity to the Units object, the list name that are supported is {units.dic_units.keys()}")
+    
+    def set_factors(self, factors:dict):
+        """Sets the factors of the units DataFrame."""
+        main_unit = False
+        if not isinstance(factors, dict):
+            raise TypeError("The factors must be a dictionary")
+        for key, value in factors.items():
+            if key in self.units.keys():
+                self.units[key]= value
+                if value == 1:
+                    main_unit = True
+                    self.main_unit = key
+            else:
+                raise ValueError(f"The key {key} is not in the units Dictionary")
+        if not main_unit:
+            raise ValueError("The dictionary must have a main unit which factor is 1")
+    
+    def simplify(self):
+        """Performs an algebraic simplification the unit of the object."""
+        
+        #Check if the unit has parenthesis 
+        symbol, factor = self.system_units.simplify(self.symbol)
+        value = self.value*factor
+        new = self.__class__(value=value,
+                             symbol=symbol,
+                             system_units=self.system_units)
+        return new
+        
+
+    def convert(self, new_unit:str, factor:float=False):
+        """Converts the value of the object to the unit specified in the unit argument."""
+        if not isinstance(new_unit, str):
+            raise TypeError("The unit must be a string")
+        if not isinstance(factor, (int, float, bool)):
+            raise TypeError("The factor must be a number or False")
+        
+        if factor:
+            value= self.value * factor
+            symbol = new_unit    
+        else:
+            if self.system_units.find_unit(new_unit):
+                factor = self.units[self.symbol]/ self.units[new_unit]
+                value = self.value * factor
+                symbol = new_unit
             else:
                 raise ValueError("Unit not supported, please specify a conversion factor")
-
+        new = self.__class__(value=value,
+                             symbol=symbol,
+                            system_units=self.system_units)
+        return new
 
     #Basic operators
 
@@ -645,18 +595,22 @@ class CivilEngUnits:
         
         if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
-                if self.symbol in self.units.index and other.symbol in self.units.index:
-                    factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
+                if self.symbol in self.units.keys() and other.symbol in self.units.keys():
+                    factor = self.units[other.symbol]/self.units[self.symbol]
                     value = self.value + other.value * factor
-                    result = self.__class__(value=value, symbol=self.symbol, name=self.name)
-                    result.set_units(self.units.reset_index(), self.name)
+                    result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
+                                            system_units=self.system_units)
+                    result.set_factors(self.units)
                     return result
                 else:   
                     raise TypeError(f"""The units of the object that you are trying to add don't match. The units that can be add are:
-                    {self.units.index.to_list()}""")
+                    {self.units.keys()}""")
             else:
-                result = self.__class__(self.value + other.value, self.symbol, name=self.name)
-                result.set_units(self.units.reset_index(), self.name)
+                value = self.value + other.value
+                result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
+                                            system_units=self.system_units)
+               
+                result.set_factors(self.units)
                 return result
         else:
             raise TypeError(f"Can only add {self.name} quantities")
@@ -665,18 +619,21 @@ class CivilEngUnits:
 
         if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
-                if self.symbol in self.units.index and other.symbol in self.units.index:
-                    factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
+                if self.symbol in self.units.keys() and other.symbol in self.units.keys():
+                    factor = self.units[other.symbol]/self.units[self.symbol]
                     value = self.value - other.value * factor
-                    result = self.__class__(value=value, symbol=self.symbol, name=self.name)
-                    result.set_units(self.units.reset_index(), self.name)
+                    result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
+                                            system_units=self.system_units)
+                    result.set_factors(self.units)
                     return result
                 else:   
-                    raise TypeError(f"""The units of the object that you are trying to substract don't match. The units that can be substract are
-                      {self.units.index.to_list()}""")
+                    raise TypeError(f"""The units of the object that you are trying to substract don't match. The units that can be substract are:
+                    {self.units.keys()}""")
             else:
-                result = self.__class__(self.value - other.value, self.symbol, name=self.name)
-                result.set_units(self.units.reset_index(), self.name)
+                value = self.value - other.value
+                result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
+                                            system_units=self.system_units)
+                result.set_factors(self.units)
                 return result
         else:
             raise TypeError(f"Can only substract {self.name} quantities")
@@ -684,11 +641,19 @@ class CivilEngUnits:
     def __mul__(self, other):
         if self.is_related(other) or isinstance(other, (int, float)):
             try:
-                result = self.__class__(self.value * other.value, self.symbol +"*"+ other.symbol)
+                result = self.__class__( value = self.value * other.value,
+                                        symbol= self.symbol +"*"+ other.symbol,
+                                        name = "",
+                                        system_units=self.system_units)
                 return result
+            
             except AttributeError:
-                result  = self.__class__(self.value * other, self.symbol)
-                return result.set_units(self.units.reset_index(), self.name)
+                result  = self.__class__( value = self.value * other, 
+                                         symbol = self.symbol,
+                                         name = "",
+                                         system_units=self.system_units)
+                
+                return result
         else:
             raise TypeError("Can only multiply by similar or numbers like objects")
         
@@ -698,24 +663,67 @@ class CivilEngUnits:
                 other.symbol = other.symbol.replace("*", "?")
                 other.symbol = other.symbol.replace("/", "*")
                 other.symbol = other.symbol.replace("?", "/")
-                result = self.__class__(self.value / other.value, self.symbol +"/"+ other.symbol)
+                result = self.__class__( value = self.value / other.value,
+                                        symbol= self.symbol +"/"+ other.symbol,
+                                        name = "",
+                                        system_units=self.system_units)
                 return result
+            
             except AttributeError:
-                result  = self.__class__(self.value / other, self.symbol)
-                return result.set_units(self.units.reset_index(), self.name)
+                result  = self.__class__( value = self.value / other, 
+                                         symbol = self.symbol,
+                                         name = "",
+                                         system_units=self.system_units)
+                
+                return result
         else:
             raise TypeError("Can only divide by similar or numbers like objects")
     
     def __pow__(self, other):
-        if type(other) == int or type(other) == float:
-            unit = self.symbol
-            p = re.compile(r"""\^\(?\-?\d+\.?\d*\)?""" , re.X)
-            for i in re.finditer(p, unit):
-                t = i.group()
-                q = re.search(r"\-?\d+\.?\d*", t).group()
-                c = float(q)
-                unit = unit.replace(q, f"{c*other}")
-            result = self.__class__(self.value ** other, unit)
+        if isinstance(other, (int, float)):
+
+            def to_symbol(x):
+                arg = re.search(r"[a-zA-Z]+", x).group()
+                c = re.search(r"\-?\d+\.?\d*", x)
+                if c == None:
+                    c = 1
+                else:
+                    c = c.group()
+                    c = float(c)
+                    c = round(c, 3)
+                    y = 1
+                return sym.Symbol(arg)**c
+            v_to_symbol = np.vectorize(to_symbol)
+            old_unit = remove_parenthesis_un(self.symbol)
+            if old_unit[0] != "1":
+                old_unit = "*" + old_unit
+            mult_un = re.findall(r"\*(\w+\^?\-?\d*\.?\d*)", old_unit)
+            div_un = re.findall(r"/(\w+\^?\-?\d*\.?\d*)", old_unit)
+            new = 1
+            if mult_un != []:
+                mult_un = np.array(mult_un)
+                mult_un = v_to_symbol(mult_un)
+                mult_un = np.prod(mult_un)
+                new *= mult_un
+            if div_un != []:
+                div_un = np.array(div_un)
+                div_un = v_to_symbol(div_un)
+                div_un = np.prod(div_un)
+                new /= div_un
+            new  = new**other
+            new = sym.powdenest(new, force=True)
+            print(new)
+            new = str(new)
+            new = new.replace("**1.0*", "*")
+            new = new.replace("**1.0/", "/") 
+            if new[-5:] == "**1.0":
+                new = new[:-5]
+            new =  new.replace("**", "^")
+            unit = new
+            result = self.__class__(value = self.value ** other, 
+                                    symbol= unit,
+                                    name = "",
+                                    system_units=self.system_units)
             return result
         else:
             raise TypeError("Can only raise to the power of numbers like objects")
@@ -725,13 +733,13 @@ class CivilEngUnits:
     def __iadd__(self, other):
         if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
-                if self.symbol in self.units.index and other.symbol in self.units.index:
-                    factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
+                if self.symbol in self.units.keys() and other.symbol in self.units.keys():
+                    factor = self.units[other.symbol]/self.units[self.symbol]
                     self.value = self.value + other.value * factor
                     self.symbol = self.symbol
                     return self
                 else:   
-                   raise TypeError(f"""The unit that you are trying to add is not supported the units that are supported are: {self.units.index.to_list()}""")
+                   raise TypeError(f"""The unit that you are trying to add is not supported the units that are supported are: {self.units.keys()}""")
             else:
                 self.value = self.value + other.value
                 self.symbol = self.symbol
@@ -742,8 +750,8 @@ class CivilEngUnits:
     def __isub__(self, other):
         if self.is_related(other) and self.name == other.name:
             if self.symbol != other.symbol:
-                if self.symbol in self.units.index and other.symbol in self.units.index:
-                    factor = self.units.loc[other.symbol]["Factor"]/self.units.loc[self.symbol]["Factor"]
+                if self.symbol in self.units.keys() and other.symbol in self.units.keys():
+                    factor = self.units[other.symbol]/self.units[self.symbol]
                     self.value = self.value - other.value * factor
                     self.symbol = self.symbol
                     return self
@@ -756,76 +764,58 @@ class CivilEngUnits:
         else:
             raise TypeError(f"Can only substract {self.name} quantities")
           
-    def __imul__(self, other):
-        if self.is_related(other) or isinstance(other, (int, float)):
-            try:
-                self.value *= other.value
-                self.symbol = self.symbol+ "*" + other.symbol
-            except AttributeError:
-                self.value *= other
-            return self
-        else:
-            raise TypeError("Can only multiply by similar or numbers like objects")
-
-    def __itruediv__(self, other):
-        if self.is_related(other) or isinstance(other, (int, float)):
-            try:
-                other.symbol = other.symbol.replace("*", "?")
-                other.symbol = other.symbol.replace("/", "*")
-                other.symbol = other.symbol.replace("?", "/")
-                self.value /= other.value
-                self.symbol = self.symbol + "/" + other.symbol
-            except AttributeError:
-                self.value /= other
-            return self
-        else:
-            raise TypeError("Can only divide by similar or numbers like objects")
     
     #Comparison operators
 
     def __eq__(self, other):
         if self.is_related(other):
-            a = self.value * self.units.loc[self.symbol]["Factor"]
-            b = other.value * self.units.loc[other.symbol]["Factor"]
+            factor = self.units[other.symbol]/self.units[self.symbol]
+            a = self.value 
+            b = other.value * factor 
             return a == b
         else:
             raise TypeError("Can only compare similar objects")
     def __ne__(self, other):
         if self.is_related(other):
-            a = self.value * self.units.loc[self.symbol]["Factor"]
-            b = other.value * self.units.loc[other.symbol]["Factor"]
+            factor = self.units[other.symbol]/self.units[self.symbol]
+            a = self.value 
+            b = other.value * factor 
             return a != b
         else:
             raise TypeError("Can only compare similar objects")
         
     def __lt__(self, other):
         if self.is_related(other):
-            a = self.value * self.units.loc[self.symbol]["Factor"]
-            b = other.value * self.units.loc[other.symbol]["Factor"]
+            factor = self.units[other.symbol]/self.units[self.symbol]
+            a = self.value 
+            b = other.value * factor 
             return a < b
         else:
             raise TypeError("Can only compare similar objects")
         
     def __le__(self, other):
         if self.is_related(other):
-            a = self.value * self.units.loc[self.symbol]["Factor"]
-            b = other.value * self.units.loc[other.symbol]["Factor"]
+            factor = self.units[other.symbol]/self.units[self.symbol]
+            a = self.value 
+            b = other.value * factor 
             return a <= b
         else:
             raise TypeError("Can only compare similar objects")
         
     def __gt__(self, other):
        if self.is_related(other):
-            a = self.value * self.units.loc[self.symbol]["Factor"]
-            b = other.value * self.units.loc[other.symbol]["Factor"]
+            factor = self.units[other.symbol]/self.units[self.symbol]
+            a = self.value 
+            b = other.value * factor 
             return a > b
        else:
             raise TypeError("Can only compare similar objects")
         
     def __ge__(self, other):
        if self.is_related(other):
-            a = self.value * self.units.loc[self.symbol]["Factor"]
-            b = other.value * self.units.loc[other.symbol]["Factor"]
+            factor = self.units[other.symbol]/self.units[self.symbol]
+            a = self.value 
+            b = other.value * factor 
             return a >= b
        else:
             raise TypeError("Can only compare similar objects")    
@@ -854,16 +844,20 @@ class CivilEngUnits:
         self.value = self.value // 1
         return self
     
-
-            
-            
-            
-
-
-
-
-
-
-    
-    
-    
+def from_string(string:str, units:Units, class_name=Quantity):
+    """Creates a new object from a string with the value and the unit separated by a space"""
+    if not isinstance(string, str):
+        raise TypeError("The input must be a string")
+    if not isinstance(units, Units):
+        raise TypeError("The unit must be an instance of the Units class")
+    if not isinstance(class_name, type):
+        raise TypeError("The class_name must be a class")
+    if not issubclass(class_name, Quantity):
+        raise TypeError("The class_name must be a subclass of Quantity")
+    string = string.strip().replace(",", "")
+    if re.match(r"^\d+\.?\d*\s\w+$", string) is None:
+        raise ValueError("""The input string is not in the correct format. Examples of the correct format are '2 m', '2,000.00 m', '2000.00 m' """)
+    string = string.split() 
+    value = float(string[0])
+    symbol = string[1]
+    return class_name(value, symbol, units)
