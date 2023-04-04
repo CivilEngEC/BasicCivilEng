@@ -394,9 +394,7 @@ class Units:
     
     def simplify(self, unit:str):
 
-        """Simplifies the unit of the object and converts the value to the unit specified in the unit argument.
-        if a units dataframe is provide it will use it to convert the value, 
-        otherwise it will use the units dataframe of the object."""
+        """ Perform an algebraic simplification of the unit using the unit system."""
         if not isinstance(unit, str):
             raise TypeError("The unit must be a string")
         
@@ -525,32 +523,31 @@ class Quantity:
         """Returns the units Dataframe."""
         return self.units
     
-    def update_units(self,name:str, units:Units):
+    def update_units(self, units:Units):
         """Updates the units DataFrame."""
         if not isinstance(units, Units):
             raise TypeError("The units must be an instance of the class Units")
-        if not isinstance(name, str):
-            raise TypeError("The name of the physical quantity must be a string")
-        
-        if name in units.dic_units:
-            self.units = units.dic_units[name]
-            self.main_unit = units.unit_system[name]
         else:
-            raise ValueError(f"The name of the physical quantity is not supported by the Units object, please use .set_units() method to add the physical quantity to the Units object, the list name that are supported is {units.dic_units.keys()}")
-    
+            new = self.__class__(value=self.value,
+                                    symbol=self.symbol,
+                                    system_units=units,
+                                    decimal=self.decimal)
+            return new
+        
     def set_factors(self, factors:dict):
-        """Sets the factors of the units DataFrame."""
+        """Sets the factors of the units Dictionary."""
         main_unit = False
         if not isinstance(factors, dict):
             raise TypeError("The factors must be a dictionary")
         for key, value in factors.items():
             if key in self.units.keys():
                 self.units[key]= value
-                if value == 1:
-                    main_unit = True
-                    self.main_unit = key
             else:
                 raise ValueError(f"The key {key} is not in the units Dictionary")
+        for key, value in self.units.items():
+                if value == 1:
+                    self.main_unit = key
+                    main_unit = True
         if not main_unit:
             raise ValueError("The dictionary must have a main unit which factor is 1")
     
@@ -585,7 +582,8 @@ class Quantity:
                 raise ValueError("Unit not supported, please specify a conversion factor")
         new = self.__class__(value=value,
                              symbol=symbol,
-                            system_units=self.system_units)
+                            system_units=self.system_units,
+                            decimal=self.decimal)
         return new
 
     #Basic operators
@@ -599,7 +597,7 @@ class Quantity:
                     factor = self.units[other.symbol]/self.units[self.symbol]
                     value = self.value + other.value * factor
                     result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units)
+                                            system_units=self.system_units, decimal=self.decimal)
                     result.set_factors(self.units)
                     return result
                 else:   
@@ -608,7 +606,7 @@ class Quantity:
             else:
                 value = self.value + other.value
                 result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units)
+                                            system_units=self.system_units,decimal=self.decimal)
                
                 result.set_factors(self.units)
                 return result
@@ -623,7 +621,7 @@ class Quantity:
                     factor = self.units[other.symbol]/self.units[self.symbol]
                     value = self.value - other.value * factor
                     result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units)
+                                            system_units=self.system_units,decimal=self.decimal)
                     result.set_factors(self.units)
                     return result
                 else:   
@@ -632,7 +630,7 @@ class Quantity:
             else:
                 value = self.value - other.value
                 result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units)
+                                            system_units=self.system_units,decimal=self.decimal)
                 result.set_factors(self.units)
                 return result
         else:
@@ -644,14 +642,16 @@ class Quantity:
                 result = self.__class__( value = self.value * other.value,
                                         symbol= self.symbol +"*"+ other.symbol,
                                         name = "",
-                                        system_units=self.system_units)
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
                 return result
             
             except AttributeError:
                 result  = self.__class__( value = self.value * other, 
                                          symbol = self.symbol,
                                          name = "",
-                                         system_units=self.system_units)
+                                         system_units=self.system_units,
+                                         decimal=self.decimal)
                 
                 return result
         else:
@@ -666,14 +666,16 @@ class Quantity:
                 result = self.__class__( value = self.value / other.value,
                                         symbol= self.symbol +"/"+ other.symbol,
                                         name = "",
-                                        system_units=self.system_units)
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
                 return result
             
             except AttributeError:
                 result  = self.__class__( value = self.value / other, 
                                          symbol = self.symbol,
                                          name = "",
-                                         system_units=self.system_units)
+                                         system_units=self.system_units,
+                                         decimal=self.decimal)
                 
                 return result
         else:
@@ -723,7 +725,8 @@ class Quantity:
             result = self.__class__(value = self.value ** other, 
                                     symbol= unit,
                                     name = "",
-                                    system_units=self.system_units)
+                                    system_units=self.system_units,
+                                    decimal=self.decimal)
             return result
         else:
             raise TypeError("Can only raise to the power of numbers like objects")
