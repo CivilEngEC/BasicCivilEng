@@ -29,7 +29,8 @@ A module that will contain basic Engineering Classes and Functions for developin
 | Class | Required Arguments | Optional Arguments |
 | -- | -- | -- |
 | `Units` | ``  | ``  |
-| `Quantity` | `value:number, symbol:string, system_units:Units`  | ` decimal:interger, name:string`  |
+| `Quantity` | `value:number, symbol:string, system_units:Units`  | ` decimal:interger`  |
+| `Money` | `value:number, symbol:string, system_units:Units`  | ` decimal:interger, date:string, year_rate:float`  |
 
 ### Class Units
 This class will be the master for handle unit, it will contain all the physical quantanties and units of messurement that the software can interpret and read
