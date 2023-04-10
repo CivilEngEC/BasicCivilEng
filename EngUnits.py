@@ -45,6 +45,24 @@ def remove_parenthesis_un(unit:str):
             raise ValueError("The unit is not valid")  
         return unit
 
+def from_string(string:str, units, class_name):
+    """Creates a new object from a string with the value and the unit separated by a space"""
+    if not isinstance(string, str):
+        raise TypeError("The input must be a string")
+    if not isinstance(units, Units):
+        raise TypeError("The unit must be an instance of the Units class")
+    if not isinstance(class_name, type):
+        raise TypeError("The class_name must be a class")
+    if not issubclass(class_name, Quantity):
+        raise TypeError("The class_name must be a subclass of Quantity")
+    string = string.strip().replace(",", "")
+    if re.match(r"^\d+\.?\d*\s\w+$", string) is None:
+        raise ValueError("""The input string is not in the correct format. Examples of the correct format are '2 m', '2,000.00 m', '2000.00 m' """)
+    string = string.split() 
+    value = float(string[0])
+    symbol = string[1]
+    return class_name(value, symbol, units)
+
 class Units:
     """This class will constitute a blueprint and parent class for Units of messurement in Engineering"""
     def __init__(self):
@@ -208,6 +226,19 @@ class Units:
             ("Radian","rad", 1),
             ("Degree","deg", 0.0174533)
             ]
+        #Currency
+        Currency = [("US Dollar", "USD", 1,""),
+                    ("Euro", "EUR", 1.12,""),
+                    ("British Pound", "GBP", 1.29,""),
+                    ("Russian Ruble", "RUB", 0.014,""),
+                    ("Chinese Yuan", "CNY", 0.15,""),
+                    ("Indian Rupee", "INR", 0.014,""),
+                    ("Argentine Peso", "ARS", 0.011,""),
+                    ("Brazilian Real", "BRL", 0.19,""),
+                    ("Paraguayan Guarani", "PYG", 0.0014,""),
+                    ("Uruguayan Peso", "UYU", 0.023,""),
+                    ("Mexican Peso", "MXN", 0.052,"")
+                    ]
     
         #Dictionary of base units
         self.dic_units = {"Time": Time,
@@ -226,7 +257,8 @@ class Units:
                             "ElectricCharge": ElectricCharge,
                             "ElectricPotential": ElectricPotential,
                             "LuminousFlux": LFlux,
-                            "Iluminance": iluminance}
+                            "Iluminance": iluminance,
+                            "Currency": Currency}
 
         columns = ["Name", "Symbol", "Factor", "Description"]
         
@@ -270,7 +302,8 @@ class Units:
                             "ElectricCharge": "C",
                             "ElectricPotential": "V",
                             "LuminousFlux": "lm",
-                            "Iluminance": "lx"}
+                            "Iluminance": "lx",
+                            "Currency": "USD"}
    
     def find_unit(self, unit):
         """Checks if the unit is supported by the object.
@@ -449,22 +482,18 @@ class Units:
             unit = new
            
         return unit, value
-
-    
-    
+   
+#Physical quantities class    
 class Quantity:
     """This class will constitute a blueprint and parent class for Engineering quantities 
     -the value is the measure of the physical quantity
-    -the unit use for measure the physical quantity
-    -the decimal places that you want to show in the string representation of the object
-    -the name of the physical quantity by default there are 12 physical quantities:
-    ["Time", "Length", "Mass", "ElectricCurrent", "Temperature", "Luminus Intensity", "Angle"
-    "Area", "Volume", "Force", "Pressure", "Energy", "Power", "ElectricCharge", "ElectricPotential",
-    "LuminousFlux", "Iluminance"]
-    By default the decimal places is 3 and the name is "Lenght" and the main units are SI units
+    -the symbol is the unit of the physical quantity
+    -system_units is an instance of the class Units it is used as interpreter of the unit
+    -decimal is the number of decimal places to be displayed
+    -name is the name of the physical quantity
     """
    
-    def __init__(self, value:float, symbol:str, system_units:Units, decimal:int=3, name:str=""):
+    def __init__(self, value:float, symbol:str, system_units:Units, decimal:int=3):
                
         #Check the type of the arguments
         if not isinstance(value, (int, float)):
@@ -475,14 +504,12 @@ class Quantity:
             raise TypeError("The decimal places must be an integer")
         if not isinstance(system_units, Units):
             raise TypeError("The units must be an instance of the class Units")
-        if not isinstance(name, str):
-            raise TypeError("The name of the physical quantity must be a string")
         
-        self.name = name #Name of the physical quantity
         self.value = value
         self.symbol = symbol
         self.decimal = decimal
         self.system_units = system_units
+        self.name = "" #Name of the physical quantity
         if symbol in self.system_units.all_units:
             self.name = self.system_units.find_unit(symbol)
         if self.name == "":
@@ -596,8 +623,10 @@ class Quantity:
                 if self.symbol in self.units.keys() and other.symbol in self.units.keys():
                     factor = self.units[other.symbol]/self.units[self.symbol]
                     value = self.value + other.value * factor
-                    result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units, decimal=self.decimal)
+                    result = self.__class__(value=value,
+                                            symbol=self.symbol, 
+                                            system_units=self.system_units, 
+                                            decimal=self.decimal)
                     result.set_factors(self.units)
                     return result
                 else:   
@@ -605,8 +634,10 @@ class Quantity:
                     {self.units.keys()}""")
             else:
                 value = self.value + other.value
-                result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units,decimal=self.decimal)
+                result = self.__class__(value=value, 
+                                        symbol=self.symbol,
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
                
                 result.set_factors(self.units)
                 return result
@@ -620,8 +651,10 @@ class Quantity:
                 if self.symbol in self.units.keys() and other.symbol in self.units.keys():
                     factor = self.units[other.symbol]/self.units[self.symbol]
                     value = self.value - other.value * factor
-                    result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units,decimal=self.decimal)
+                    result = self.__class__(value=value, 
+                                            symbol=self.symbol,
+                                            system_units=self.system_units,
+                                            decimal=self.decimal)
                     result.set_factors(self.units)
                     return result
                 else:   
@@ -629,54 +662,67 @@ class Quantity:
                     {self.units.keys()}""")
             else:
                 value = self.value - other.value
-                result = self.__class__(value=value, symbol=self.symbol, name=self.name, 
-                                            system_units=self.system_units,decimal=self.decimal)
+                result = self.__class__(value=value, 
+                                        symbol=self.symbol, 
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
                 result.set_factors(self.units)
                 return result
         else:
             raise TypeError(f"Can only substract {self.name} quantities")
         
     def __mul__(self, other):
-        if self.is_related(other) or isinstance(other, (int, float)):
-            try:
-                result = self.__class__( value = self.value * other.value,
+        if self.is_related(other) or isinstance(other, (int, float, np.ndarray)):
+            if self.is_related(other):
+                result = Quantity( value = self.value * other.value,
                                         symbol= self.symbol +"*"+ other.symbol,
-                                        name = "",
                                         system_units=self.system_units,
                                         decimal=self.decimal)
                 return result
             
-            except AttributeError:
-                result  = self.__class__( value = self.value * other, 
-                                         symbol = self.symbol,
-                                         name = "",
-                                         system_units=self.system_units,
-                                         decimal=self.decimal)
-                
+            if isinstance(other, (int, float)):
+                result = self.__class__( value = self.value * other,
+                                        symbol= self.symbol,
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
                 return result
+            elif isinstance(other, np.ndarray):
+                def mul(x):
+                    if isinstance(x, (int, float)):
+                        x = self.__class__( value = self.value * x,
+                                        symbol= self.symbol,
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
+                        return x
+                    
+                    else:
+                        raise TypeError("Can only multiply by similar, numbers like objects, or arrays of numbers like objects")
+                    
+                mul = np.vectorize(mul)
+                return mul(other)
+                
         else:
-            raise TypeError("Can only multiply by similar or numbers like objects")
+            raise TypeError("Can only multiply by similar, numbers like objects, or arrays of numbers like objects")
+    def __rmul__(self, other):
+        self.__mul__(other)
         
     def __truediv__(self, other):
         if self.is_related(other) or isinstance(other, (int, float)):
-            try:
+            if self.is_related(other):
                 other.symbol = other.symbol.replace("*", "?")
                 other.symbol = other.symbol.replace("/", "*")
                 other.symbol = other.symbol.replace("?", "/")
-                result = self.__class__( value = self.value / other.value,
+                result = Quantity( value = self.value / other.value,
                                         symbol= self.symbol +"/"+ other.symbol,
-                                        name = "",
                                         system_units=self.system_units,
                                         decimal=self.decimal)
                 return result
             
-            except AttributeError:
-                result  = self.__class__( value = self.value / other, 
-                                         symbol = self.symbol,
-                                         name = "",
-                                         system_units=self.system_units,
-                                         decimal=self.decimal)
-                
+            elif isinstance(other, (int, float)):
+                result = self.__class__( value = self.value / other,
+                                        symbol= self.symbol,
+                                        system_units=self.system_units,
+                                        decimal=self.decimal)
                 return result
         else:
             raise TypeError("Can only divide by similar or numbers like objects")
@@ -724,7 +770,6 @@ class Quantity:
             unit = new
             result = self.__class__(value = self.value ** other, 
                                     symbol= unit,
-                                    name = "",
                                     system_units=self.system_units,
                                     decimal=self.decimal)
             return result
@@ -847,20 +892,130 @@ class Quantity:
         self.value = self.value // 1
         return self
     
-def from_string(string:str, units:Units, class_name=Quantity):
-    """Creates a new object from a string with the value and the unit separated by a space"""
-    if not isinstance(string, str):
-        raise TypeError("The input must be a string")
-    if not isinstance(units, Units):
-        raise TypeError("The unit must be an instance of the Units class")
-    if not isinstance(class_name, type):
-        raise TypeError("The class_name must be a class")
-    if not issubclass(class_name, Quantity):
-        raise TypeError("The class_name must be a subclass of Quantity")
-    string = string.strip().replace(",", "")
-    if re.match(r"^\d+\.?\d*\s\w+$", string) is None:
-        raise ValueError("""The input string is not in the correct format. Examples of the correct format are '2 m', '2,000.00 m', '2000.00 m' """)
-    string = string.split() 
-    value = float(string[0])
-    symbol = string[1]
-    return class_name(value, symbol, units)
+#Money class
+class Money(Quantity):
+    """Money class, inherits from Quantity class
+    The money class should have in addition to all the atributes and methods of the Quantity 
+    class the following:
+        - A date attribute that stores the date of the transaction, the date should be a string in the 
+        iso format this is YYYY-MM-DD
+        - A year rate attribute that stores the interest rate of the transaction
+        - A method that calculates the future value of the money
+        - A method that calculates the present value of the money
+        - and other financial methods that you think are relevant"""
+    def __init__(self, value, symbol, system_units, date:str="", year_rate:float=0.0, decimal:int=2):
+        super().__init__(value, symbol, system_units, decimal=2)
+        if not isinstance(date, str):
+            raise TypeError("Date should be a string")
+        if date == "":
+            self.date = datetime.date.today()
+        else:
+            try: 
+                self.date = datetime.date.fromisoformat(date)
+            except Exception as e:
+                raise ValueError( str(e) + ". Date should be in the iso format YYYY-MM-DD")
+        if not isinstance(year_rate, (float, int)):
+            raise TypeError("Year rate should be a number")
+        self.date = date
+        self.year_rate = year_rate
+
+    def time_value(self, n:int, rate:float=None):
+        """Calculates the value of the money at the end of n periods
+        n: number of payment periods, if it is positive it is the future value, 
+        if it is negative it is the present/past value
+        rate: interest rate"""
+
+        if not isinstance(n, int):
+            raise TypeError("n should be an integer")
+        if rate == None:
+            rate = self.year_rate
+        if not isinstance(rate, (float, int)):
+            raise TypeError("rate should be a number")
+        value = self * (1 + rate)**n
+        return value
+    
+    def show_values(self, n:int, rate=None, plot=True):
+        """Calculates the value of the money at the end of n periods
+        n: number of payment periods, if it is positive it is the future value, 
+        if it is negative it is the present/past value
+        rate: interest rate, if its variable you can pass it as a list or array, with the
+        same lenght as the number of periods, when you pass a list or array the rate is
+        assumed to be constant for each period and the lenght of the list or array should
+        be equal to the number of periods, if you pass a number the rate is assumed to be
+        constant for all the periods. It always go from the period 0 to the period n
+        plot: if True it plots the values"""
+        if not isinstance(n, int) and n==0:
+            raise TypeError("n should be an integer, and different from 0")
+        if rate == None:
+            rate = self.year_rate
+        if not isinstance(rate, (float, int, list, np.ndarray)):
+            raise TypeError("rate should be a number or a list/array of numbers")
+        if isinstance(rate, (list, np.ndarray)):
+            if len(rate) != abs(n):
+                raise ValueError(f"rate should have the lenght equal to the number of periods {n}")
+            rate = np.array(rate)
+        else:
+            rate = np.ones(abs(n)) * rate
+        if n > 0:
+            x = np.arange(0, n+1, 1)
+            rate = np.insert(rate, 0, 0)
+            y = self*np.cumprod(1 + rate)
+            
+        elif n < 0:
+            x = np.arange(n, 1, 1)
+            rate = np.insert(rate, 0, 0)
+            y = self*np.cumprod(1/(1 + rate))
+            rate = np.flip(rate)
+            y = np.flip(y)
+
+        if plot:
+            plt.plot(x, y)
+            plt.xlabel("Period")
+            plt.ylabel("Value")
+            plt.show()
+        return pd.DataFrame({"Period":x, "Value":y, "Rate":rate}).set_index("Period")
+    
+    def date_value(self,date:str, year_rate:float=None):
+        """Calculate the value of a money object at a specific date.
+        the date is a string in the format YYYY-MM-DD."""
+        if year_rate == None:
+            year_rate = self.year_rate
+        if not isinstance(year_rate, (float, int, list, np.ndarray)):
+            raise TypeError("rate should be a number or a list/array of numbers")
+        if not isinstance(date, str):
+            raise TypeError("The date must be a string.")
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+            raise ValueError("The date must be in the format YYYY-MM-DD.")
+        n = (datetime.date.fromisoformat(date) - self.date).days / 365
+        n = round(n, 0)
+        return self * (1 + year_rate) ** n
+    
+    def sinking_fund(self, rate: float, n: int):
+        """Calculate the sinking fund of a money object. It is used to determine a series of equal payments 
+        or receipts at the end of each period that is equivalent to a stated or required future sum
+        the rate is the value that will be add if rate is positive or substracted if negative at the end of each period, 
+        the period is an integer usually are the number of years.
+        -n: number of periods
+        -rate: interest rate"""
+
+        if not isinstance(rate, float):
+            raise TypeError("The discount rate must be a number.")
+        if not isinstance(n, int):
+            raise TypeError("The number of years must be an integer.")
+        factor = rate/((1 + rate)**n - 1)
+        return self * factor * np.ones(n)
+    
+    def capital_recovery(self, rate: float, n: int):
+        """Calculate the capital recovery of a money object. It is used to determine a series of equal payments 
+        or receipts at the end of each period that is equivalent to a stated or required present sum
+        the rate is the value that will be add if rate is positive or substracted if negative at the end of each period, 
+        the period is an integer usually are the number of years.
+        -n: number of periods
+        -rate: interest rate"""
+
+        if not isinstance(rate, float):
+            raise TypeError("The discount rate must be a number.")
+        if not isinstance(n, int):
+            raise TypeError("The number of years must be an integer.")
+        factor = (rate*(1+rate)**n)/((1 + rate)**n - 1)
+        return self * factor * np.ones(n)
