@@ -680,12 +680,13 @@ class Quantity:
                                         decimal=self.decimal)
                 return result
             
-            if isinstance(other, (int, float)):
+            elif isinstance(other, (int, float)):
                 result = self.__class__( value = self.value * other,
                                         symbol= self.symbol,
                                         system_units=self.system_units,
                                         decimal=self.decimal)
                 return result
+            
             elif isinstance(other, np.ndarray):
                 def mul(x):
                     if isinstance(x, (int, float)):
@@ -699,12 +700,11 @@ class Quantity:
                         raise TypeError("Can only multiply by similar, numbers like objects, or arrays of numbers like objects")
                     
                 mul = np.vectorize(mul)
-                return mul(other)
-                
+                return mul(other)       
         else:
             raise TypeError("Can only multiply by similar, numbers like objects, or arrays of numbers like objects")
     def __rmul__(self, other):
-        self.__mul__(other)
+        return self.__mul__(other)
         
     def __truediv__(self, other):
         if self.is_related(other) or isinstance(other, (int, float)):
@@ -1104,7 +1104,7 @@ class Money(Quantity):
         return self * factor
 
 #Cash Flow
-def cash_flow(inflow, outflow, n:int, rate:float):
+def cash_flow(inflow, outflow, n:int, rate:float, plot:bool=True):
     """Calculate the cash flow of a money.
     It plots the cash flow, returns a dataframe with the cash flow and the net cash flow 
     and the net present value.
@@ -1116,6 +1116,7 @@ def cash_flow(inflow, outflow, n:int, rate:float):
     rate: interest rate"""
     if not isinstance(rate, float):
         raise TypeError("The discount rate must be a number.")
+
     if not isinstance(n, int):
             try:
                 n = float(n)
@@ -1125,6 +1126,8 @@ def cash_flow(inflow, outflow, n:int, rate:float):
                     raise TypeError("n should be an integer like object")
             except:
                 raise TypeError("n should be an integer")
+    if not isinstance(plot, bool):
+        raise TypeError("plot must be a boolean.")
     if not isinstance(inflow, (tuple, list, pd.Series)):
         raise TypeError("inflow should be a number a tuple, Series or a list of tuples or Series")
     if not isinstance(outflow , (tuple, list, pd.Series)):
@@ -1217,34 +1220,95 @@ def cash_flow(inflow, outflow, n:int, rate:float):
                                 "Net_Value":net_cash_flow.cumsum()})
     df_cash_flow.index.name = 'Period'
     df_cash_flow = df_cash_flow.fillna(cero)
-    """Plot the cash flow, the inflow will be represented by a green arrow,
-    the outflow by a red arrow and the net cash flow by a black line"""
-    max = df_cash_flow['Inflow'].max()
-    if df_cash_flow['Outflow'].max() > max:
-        max = df_cash_flow['Outflow'].max()
-    if df_cash_flow['Net_Cash_Flow'].max() > max:
-        max = df_cash_flow['Net_Cash_Flow'].max()
-    max = float(max)
-    fig, ax = plt.subplots()
-    for i in range(len(df_cash_flow)):
-        outfl = df_cash_flow.iloc[i]['Outflow']
-        outfl = - float(outfl)
-        infl = df_cash_flow.iloc[i]['Inflow']
-        infl = float(infl)
-        netfl = df_cash_flow.iloc[i]['Net_Cash_Flow']
-        netfl = float(netfl)
-        print(outfl, infl, netfl)
-
-        if outfl != 0:
-            ax.arrow(i,0,0,-outfl, width=0.1, head_width=0.2, head_length=max/100, fc='r', ec='r')
-        if infl != 0:
-            ax.arrow(i,0,0,infl, width=0.1, head_width=0.2, head_length=max/100, fc='g', ec='g')
+    if plot:
+        """Plot the cash flow, the inflow will be represented by a green arrow,
+        the outflow by a red arrow and the net cash flow by a black line"""
+        max = df_cash_flow['Inflow'].max()
+        if df_cash_flow['Outflow'].max() > max:
+            max = df_cash_flow['Outflow'].max()
+        if df_cash_flow['Net_Cash_Flow'].max() > max:
+            max = df_cash_flow['Net_Cash_Flow'].max()
+        max = float(max)
+        fig, ax = plt.subplots()
+        for i in range(len(df_cash_flow)):
+            outfl = df_cash_flow.iloc[i]['Outflow']
+            outfl = - float(outfl)
+            infl = df_cash_flow.iloc[i]['Inflow']
+            infl = float(infl)
+            netfl = df_cash_flow.iloc[i]['Net_Cash_Flow']
+            netfl = float(netfl)
+            if outfl != 0:
+                ax.arrow(i,0,0,-outfl, width=0.1, head_width=0.2, head_length=max/100, fc='r', ec='r')
+            if infl != 0:
+                ax.arrow(i,0,0,infl, width=0.1, head_width=0.2, head_length=max/100, fc='g', ec='g')
         
-    ax.plot(df_cash_flow.index, df_cash_flow['Net_Value'], 'k--')
-    ax.set_xlabel('Period')
-    ax.set_ylabel('Money')
-    ax.set_title('Cash Flow')
-    plt.show()
+        ax.plot(df_cash_flow.index, df_cash_flow['Net_Value'], 'k--')
+        ax.set_xlabel('Period')
+        ax.set_ylabel('Money')
+        ax.set_title('Cash Flow')
+        plt.show()
 
     return df_cash_flow
 
+def find_rate(inflow, outflow, n, i_start:float = 0.01, error =0.05, iteration=100):
+    """This function is used to find the discount rate that makes the net present value of a cash flow zero
+    Inflow and outflow can be a tuple (period, value) for representing single paymentes, 
+    or pd.series in wich the index is the period and the values 
+    are the sum of the money for each period, to represent multiple payments 
+    A list of different pd.series and tuples to represent multiple different of payments.
+    n: number of periods
+    i_start: initial guess for the discount rate
+    error: the admissible error for the net present value
+    iteration: the maximum number of iterations"""
+    if not isinstance(n, (np.int64,int)):
+        raise TypeError("The number of periods must be an integer.")
+    if not isinstance(i_start, (float, int)):
+        raise TypeError("The initial guess for the discount rate must be a number.")
+    end = False
+    i = i_start
+    step = 0
+    #check if the absolute value of the net present value is less than the error
+    def check_rate(i):
+        cash_flow_df = cash_flow(inflow=inflow, outflow=outflow, n=n, rate=i, plot = False)
+        net_value = cash_flow_df['Net_Value'].iloc[-1]
+        net_value = float(net_value)
+        if abs(net_value) < error:
+            return True,i, net_value, cash_flow_df
+        else:
+            return False, i, net_value, cash_flow_df
+    #check if step is less than the maximum number of iterations
+    def check_step(step, iteration):
+        if step < iteration:
+            pass
+        else:
+            raise ValueError("The maximum number of iterations has been reached.")
+
+    while not end:
+        try:
+            step += 1
+            check_step(step, iteration)
+            if not end and i == i_start:
+                end, i, net_value, cash_flow_df = check_rate(i)
+                i_before = i
+                net_value_before = net_value
+                i = i + 0.01
+                end, i, net_value, cash_flow_df = check_rate(i)
+            if not end and net_value_before == net_value:
+                while net_value_before == net_value:
+                    step += 1
+                    i = i + 0.01
+                    check_step(step, iteration)
+                    end, i, net_value, cash_flow_df = check_rate(i)
+            if not end:
+                i_aux = i
+                i =  i - net_value*(i - i_before)/(net_value - net_value_before)
+                i_before = i_aux
+                net_value_before = net_value
+                end, i, net_value, cash_flow_df = check_rate(i)
+            print(step,i)
+            if end:
+                return i, cash_flow_df
+            
+        except Exception as e:
+            end = True
+            raise e
