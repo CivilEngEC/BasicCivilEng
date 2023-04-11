@@ -924,9 +924,17 @@ class Money(Quantity):
         n: number of payment periods, if it is positive it is the future value, 
         if it is negative it is the present/past value
         rate: interest rate"""
-
-        if not isinstance(n, int):
-            raise TypeError("n should be an integer")
+        if not isinstance(n, int) and n==0:
+            if n == 0:
+                raise ValueError("n should be different from 0")
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
         if rate == None:
             rate = self.year_rate
         if not isinstance(rate, (float, int)):
@@ -945,7 +953,16 @@ class Money(Quantity):
         constant for all the periods. It always go from the period 0 to the period n
         plot: if True it plots the values"""
         if not isinstance(n, int) and n==0:
-            raise TypeError("n should be an integer, and different from 0")
+            if n == 0:
+                raise ValueError("n should be different from 0")
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
         if rate == None:
             rate = self.year_rate
         if not isinstance(rate, (float, int, list, np.ndarray)):
@@ -990,7 +1007,7 @@ class Money(Quantity):
         n = round(n, 0)
         return self * (1 + year_rate) ** n
     
-    def sinking_fund(self, rate: float, n: int):
+    def sinking_fund(self, n: int, rate: float, as_series:bool=False):
         """Calculate the sinking fund of a money object. It is used to determine a series of equal payments 
         or receipts at the end of each period that is equivalent to a stated or required future sum
         the rate is the value that will be add if rate is positive or substracted if negative at the end of each period, 
@@ -1001,11 +1018,26 @@ class Money(Quantity):
         if not isinstance(rate, float):
             raise TypeError("The discount rate must be a number.")
         if not isinstance(n, int):
-            raise TypeError("The number of years must be an integer.")
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
+        if not isinstance(as_series, bool):
+            raise TypeError("as_series must be a boolean.")
         factor = rate/((1 + rate)**n - 1)
-        return self * factor * np.ones(n)
+        y = self * factor * np.ones(n)
+        x = np.arange(1, n+1, 1)
+        result = pd.Series(y, index=x)
+        if as_series:
+            return result
+        else:
+            return result.iloc[0]
     
-    def capital_recovery(self, rate: float, n: int):
+    def capital_recovery(self, n: int, rate: float, as_series:bool=False):
         """Calculate the capital recovery of a money object. It is used to determine a series of equal payments 
         or receipts at the end of each period that is equivalent to a stated or required present sum
         the rate is the value that will be add if rate is positive or substracted if negative at the end of each period, 
@@ -1016,6 +1048,203 @@ class Money(Quantity):
         if not isinstance(rate, float):
             raise TypeError("The discount rate must be a number.")
         if not isinstance(n, int):
-            raise TypeError("The number of years must be an integer.")
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
+        if not isinstance(as_series, bool):
+            raise TypeError("as_series must be a boolean.")
         factor = (rate*(1+rate)**n)/((1 + rate)**n - 1)
-        return self * factor * np.ones(n)
+        y = self * factor * np.ones(n)
+        x = np.arange(1, n+1, 1)
+        result = pd.Series(y, index=x)
+        if as_series:
+            return result
+        else:
+            return result.iloc[0]
+
+    def sinked_fund(self, n:int, rate:float):
+        """Calculate the sinked fund of a money object. 
+        It is used to determine the future value of a series of equal payments or 
+        receipts at the end of each period"""
+        if not isinstance(rate, float):
+            raise TypeError("The discount rate must be a number.")
+        if not isinstance(n, int):
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
+        factor = ((1 + rate)**n - 1)/rate
+        return self * factor
+    
+    def recovered_capital(self, n:int, rate:float):
+        """Calculate the recovered capital of a money object. 
+        It is used to determine the present value of a series of equal payments or 
+        receipts at the end of each period"""
+        if not isinstance(rate, float):
+            raise TypeError("The discount rate must be a number.")
+        if not isinstance(n, int):
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
+        factor = ((1 + rate)**n - 1)/(rate*(1 + rate)**n)
+        return self * factor
+
+#Cash Flow
+def cash_flow(inflow, outflow, n:int, rate:float):
+    """Calculate the cash flow of a money.
+    It plots the cash flow, returns a dataframe with the cash flow and the net cash flow 
+    and the net present value.
+    Inflow and outflow can be a tuple (period, value) for representing single paymentes, 
+    or pd.series in wich the index is the period and the values 
+    are the sum of the money for each period, to represent multiple payments 
+    A list of different pd.series and tuples to represent multiple different of payments.
+    n: number of periods
+    rate: interest rate"""
+    if not isinstance(rate, float):
+        raise TypeError("The discount rate must be a number.")
+    if not isinstance(n, int):
+            try:
+                n = float(n)
+                if round(n,0) ==  round(n,2):
+                    n = int(n)
+                else:
+                    raise TypeError("n should be an integer like object")
+            except:
+                raise TypeError("n should be an integer")
+    if not isinstance(inflow, (tuple, list, pd.Series)):
+        raise TypeError("inflow should be a number a tuple, Series or a list of tuples or Series")
+    if not isinstance(outflow , (tuple, list, pd.Series)):
+        raise TypeError("outflow should be a number a tuple, Series or a list of tuples or Series")
+    
+    if isinstance(inflow, tuple):
+        if not isinstance(inflow[0], (np.int64,int)):
+            raise TypeError("The period must be an integer.")
+        elif not isinstance(inflow[1], Money):
+            raise TypeError("The value must be a Money object.")
+        else:
+            inflow = pd.Series(inflow[1], index=[inflow[0]])
+    
+    if isinstance(outflow, tuple):
+        if not isinstance(outflow[0], (np.int64,int)):
+            raise TypeError("The period must be an integer.")
+        elif not isinstance(outflow[1], Money):
+            raise TypeError("The value must be a Money object.")
+        else:
+            outflow = pd.Series(outflow[1], index=[outflow[0]])
+
+    if isinstance(inflow, pd.Series):
+        if not isinstance(inflow.index[0], (np.int64,int)):
+            raise TypeError("The period must be an integer.")
+        elif not isinstance(inflow.iloc[0], Money):
+            raise TypeError("The value must be a Money object.")
+    
+    if isinstance(outflow, pd.Series):
+        if not isinstance(outflow.index[0], (np.int64,int)):
+            raise TypeError("The period must be an integer.")
+        elif not isinstance(outflow.iloc[0], Money):
+            raise TypeError("The value must be a Money object.")
+    
+    cero = Money(0, "USD", Units())
+    
+    if isinstance(inflow, list):
+        for i in range(len(inflow)):
+            if not isinstance(inflow[i], (tuple, pd.Series)):
+                raise TypeError("inflow should be a list a tuple or Series")
+            if isinstance(inflow[i], pd.Series):
+                if not isinstance(inflow[i].index[0], (np.int64,int)):
+                    raise TypeError("The period must be an integer.")
+                if not isinstance(inflow[i].iloc[0], Money):
+                    raise TypeError("The value must be a Money object.")
+            if isinstance(inflow[i], tuple):
+                if not isinstance(inflow[i][0], (np.int64,int)):
+                    raise TypeError("The period must be an integer.")
+                if not isinstance(inflow[i][1], Money):
+                    raise TypeError("The value must be a Money object.")
+                inflow[i] = pd.Series(inflow[i][1], index=[inflow[i][0]])
+            if i == 0:
+                x = inflow[i]
+
+            else:
+                x = x.add(inflow[i], fill_value=cero)
+           
+        inflow = x
+    if isinstance(outflow, list):
+        for i in range(len(outflow)):
+            if not isinstance(outflow[i], (tuple, pd.Series)):
+                raise TypeError("outflow should be a list a tuple or Series")
+            elif isinstance(outflow[i], pd.Series):
+                if not isinstance(outflow[i].index[0], (np.int64,int)):
+                    raise TypeError("The period must be an integer.")
+                if not isinstance(outflow[i].iloc[0], Money):
+                    raise TypeError("The value must be a Money object.")
+            if isinstance(outflow[i], tuple):
+                if not isinstance(outflow[i][0], (np.int64,int)):
+                     raise TypeError("The period must be an integer.")
+                if not isinstance(outflow[i][1], Money):
+                    raise TypeError("The value must be a Money object.")
+                outflow[i] = pd.Series(outflow[i][1], index=[outflow[i][0]])
+            if i == 0:
+                x = outflow[i]
+            else:
+                x = x.add(outflow[i], fill_value=cero)
+        outflow = x
+    
+    Cash_flow = inflow.add(-outflow, fill_value = cero)
+    net_cash_flow = Cash_flow.copy()
+    def discount(x,y):
+        z = x*(1 + rate)**(-y)
+        return z
+    discount = np.vectorize(discount)
+    net_cash_flow = discount(net_cash_flow, net_cash_flow.index)
+    df_cash_flow = pd.DataFrame({'Inflow':inflow, 
+                                'Outflow':outflow,
+                                "Cash_Flow":Cash_flow, 
+                                'Net_Cash_Flow':net_cash_flow, 
+                                "Net_Value":net_cash_flow.cumsum()})
+    df_cash_flow.index.name = 'Period'
+    df_cash_flow = df_cash_flow.fillna(cero)
+    """Plot the cash flow, the inflow will be represented by a green arrow,
+    the outflow by a red arrow and the net cash flow by a black line"""
+    max = df_cash_flow['Inflow'].max()
+    if df_cash_flow['Outflow'].max() > max:
+        max = df_cash_flow['Outflow'].max()
+    if df_cash_flow['Net_Cash_Flow'].max() > max:
+        max = df_cash_flow['Net_Cash_Flow'].max()
+    max = float(max)
+    fig, ax = plt.subplots()
+    for i in range(len(df_cash_flow)):
+        outfl = df_cash_flow.iloc[i]['Outflow']
+        outfl = - float(outfl)
+        infl = df_cash_flow.iloc[i]['Inflow']
+        infl = float(infl)
+        netfl = df_cash_flow.iloc[i]['Net_Cash_Flow']
+        netfl = float(netfl)
+        print(outfl, infl, netfl)
+
+        if outfl != 0:
+            ax.arrow(i,0,0,-outfl, width=0.1, head_width=0.2, head_length=max/100, fc='r', ec='r')
+        if infl != 0:
+            ax.arrow(i,0,0,infl, width=0.1, head_width=0.2, head_length=max/100, fc='g', ec='g')
+        
+    ax.plot(df_cash_flow.index, df_cash_flow['Net_Value'], 'k--')
+    ax.set_xlabel('Period')
+    ax.set_ylabel('Money')
+    ax.set_title('Cash Flow')
+    plt.show()
+
+    return df_cash_flow
+
