@@ -672,7 +672,7 @@ class Quantity:
             raise TypeError(f"Can only substract {self.name} quantities")
         
     def __mul__(self, other):
-        if self.is_related(other) or isinstance(other, (int, float, np.ndarray)):
+        if self.is_related(other) or isinstance(other, (int, float, np.ndarray, pd.Series, pd.DataFrame)):
             if self.is_related(other):
                 result = Quantity( value = self.value * other.value,
                                         symbol= self.symbol +"*"+ other.symbol,
@@ -687,20 +687,9 @@ class Quantity:
                                         decimal=self.decimal)
                 return result
             
-            elif isinstance(other, np.ndarray):
-                def mul(x):
-                    if isinstance(x, (int, float)):
-                        x = self.__class__( value = self.value * x,
-                                        symbol= self.symbol,
-                                        system_units=self.system_units,
-                                        decimal=self.decimal)
-                        return x
-                    
-                    else:
-                        raise TypeError("Can only multiply by similar, numbers like objects, or arrays of numbers like objects")
-                    
-                mul = np.vectorize(mul)
-                return mul(other)       
+            elif isinstance(other, (np.ndarray, pd.Series, pd.DataFrame)):
+                    result = other*self
+                    return result    
         else:
             raise TypeError("Can only multiply by similar, numbers like objects, or arrays of numbers like objects")
     def __rmul__(self, other):
